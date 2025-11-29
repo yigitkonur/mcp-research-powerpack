@@ -1,8 +1,8 @@
-# NPM Release Workflow v2 - Auto-publish on main push
+# NPM Release Workflow v3
 name: NPM Release
 
 on:
-  # Auto-trigger on push to main
+  # Auto-publish on push (no version bump - you control version locally)
   push:
     branches:
       - main
@@ -10,15 +10,15 @@ on:
       - '*.md'
       - '.gitignore'
       - 'LICENSE'
-  # Manual trigger with version choice
+  # Manual trigger with version bump option
   workflow_dispatch:
     inputs:
       bump:
-        description: Version bump type
-        required: true
-        default: patch
+        description: Version bump type (leave empty to publish current version)
+        required: false
         type: choice
         options:
+          - ''
           - patch
           - minor
           - major
@@ -27,10 +27,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
-    # Skip if commit is from github-actions (prevents infinite loop)
-    if: ${{ github.actor != 'github-actions[bot]' && !startsWith(github.event.head_commit.message, 'chore:') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,25 +41,18 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
 
-      - name: Git Config
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "9989650+yigitkonur@users.noreply.github.com"
-
       - name: Install
         run: npm ci
 
       - name: Build
         run: npm run build
 
-      - name: Version Bump
+      - name: Version Bump (manual only)
+        if: ${{ inputs.bump != '' }}
         run: |
-          # Use input bump type for manual dispatch, default to patch for auto
-          BUMP_TYPE="${{ inputs.bump || 'patch' }}"
-          npm version $BUMP_TYPE -m "chore: bump version to %s"
-
-      - name: Push
-        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "9989650+yigitkonur@users.noreply.github.com"
+          npm version ${{ inputs.bump }} -m "release: %s"
           git push
           git push --tags
 
