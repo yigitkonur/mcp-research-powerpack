@@ -1,11 +1,11 @@
 {
-  "name": "reddit-research-mcp",
+  "name": "research-powerpack-mcp",
   "version": "3.0.0",
-  "description": "MCP server for Reddit research, web search with CTR aggregation, deep research, and web scraping",
+  "description": "The ultimate research MCP toolkit: Reddit mining, web search with CTR aggregation, AI-powered deep research, and intelligent web scraping - all in one modular package",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "reddit-research-mcp": "dist/index.js"
+    "research-powerpack-mcp": "dist/index.js"
   },
   "files": [
     "dist"
@@ -19,6 +19,7 @@
   },
   "keywords": [
     "mcp",
+    "research",
     "reddit",
     "serper",
     "search",
@@ -27,13 +28,16 @@
     "deep-research",
     "web-scraping",
     "claude",
-    "anthropic"
+    "anthropic",
+    "openrouter",
+    "scraping",
+    "research-powerpack"
   ],
   "author": "Yiğit Konur <yigit35@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yigitkonur/reddit-research-mcp"
+    "url": "https://github.com/yigitkonur/research-powerpack-mcp"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.1",

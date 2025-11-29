@@ -53,10 +53,44 @@ export const RESEARCH = {
 // ============================================================================
 
 export const SERVER = {
-  NAME: 'reddit-research-mcp',
+  NAME: 'research-powerpack-mcp',
   VERSION: '3.0.0',
-  DESCRIPTION: 'Reddit Research MCP Server with Deep Research, Web Scraping and Search',
+  DESCRIPTION: 'The ultimate research MCP toolkit with modular capabilities',
 } as const;
+
+// ============================================================================
+// Capability Detection (which features are available based on ENV)
+// ============================================================================
+
+export interface Capabilities {
+  reddit: boolean;        // REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET
+  search: boolean;        // SERPER_API_KEY
+  scraping: boolean;      // SCRAPEDO_API_KEY
+  deepResearch: boolean;  // OPENROUTER_API_KEY
+  llmExtraction: boolean; // OPENROUTER_API_KEY (for what_to_extract in scraping)
+}
+
+export function getCapabilities(): Capabilities {
+  const env = parseEnv();
+  return {
+    reddit: !!(env.REDDIT_CLIENT_ID && env.REDDIT_CLIENT_SECRET),
+    search: !!env.SEARCH_API_KEY,
+    scraping: !!env.SCRAPER_API_KEY,
+    deepResearch: !!RESEARCH.API_KEY,
+    llmExtraction: !!RESEARCH.API_KEY, // Reuses OPENROUTER for LLM extraction
+  };
+}
+
+export function getMissingEnvMessage(capability: keyof Capabilities): string {
+  const messages: Record<keyof Capabilities, string> = {
+    reddit: '❌ **Reddit tools unavailable.** Set `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` to enable.\n\n👉 Create a Reddit app at: https://www.reddit.com/prefs/apps (select "script" type)',
+    search: '❌ **Search unavailable.** Set `SERPER_API_KEY` to enable web search and Reddit search.\n\n👉 Get your free API key at: https://serper.dev (2,500 free queries)',
+    scraping: '❌ **Web scraping unavailable.** Set `SCRAPEDO_API_KEY` to enable URL content extraction.\n\n👉 Sign up at: https://scrape.do (1,000 free credits)',
+    deepResearch: '❌ **Deep research unavailable.** Set `OPENROUTER_API_KEY` to enable AI-powered research.\n\n👉 Get your API key at: https://openrouter.ai/keys',
+    llmExtraction: '⚠️ **AI extraction disabled.** The `use_llm` and `what_to_extract` features require `OPENROUTER_API_KEY`.\n\nScraping will work but without intelligent content filtering.',
+  };
+  return messages[capability];
+}
 
 // ============================================================================
 // Scraper Configuration (Scrape.do implementation)

@@ -59,7 +59,7 @@ export function calculateCommentAllocation(postCount: number): CommentAllocation
 export class RedditClient {
   private token: string | null = null;
   private tokenExpiry = 0;
-  private userAgent = 'script:reddit-mcp:v3.0 (by /u/reddit-mcp-bot)';
+  private userAgent = 'script:research-powerpack-mcp:v3.0 (by /u/research-powerpack)';
 
   constructor(private clientId: string, private clientSecret: string) {}
 
