@@ -134,4 +134,5 @@ export const CTR_WEIGHTS: Record<number, number> = {
 export const LLM_EXTRACTION = {
   MODEL: process.env.LLM_EXTRACTION_MODEL || 'openai/gpt-oss-120b:nitro',
   MAX_TOKENS: 8000,
+  ENABLE_REASONING: process.env.LLM_ENABLE_REASONING !== 'false', // Default true, can be disabled with 'false'
 } as const;

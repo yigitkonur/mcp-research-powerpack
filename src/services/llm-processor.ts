@@ -47,13 +47,21 @@ export async function processContentWithLLM(
     : `Clean and extract the main content from the following text, removing navigation, ads, and irrelevant elements:\n\n${content}`;
 
   try {
-    console.error(`[LLM Processor] Using model: ${LLM_EXTRACTION.MODEL}, max_tokens: ${config.max_tokens || LLM_EXTRACTION.MAX_TOKENS}`);
+    console.error(`[LLM Processor] Using model: ${LLM_EXTRACTION.MODEL}, max_tokens: ${config.max_tokens || LLM_EXTRACTION.MAX_TOKENS}, reasoning: ${LLM_EXTRACTION.ENABLE_REASONING}`);
     
-    const response = await processor.chat.completions.create({
+    // Build request body with reasoning support for gpt-oss models
+    const requestBody: any = {
       model: LLM_EXTRACTION.MODEL,
       messages: [{ role: 'user', content: prompt }],
       max_tokens: config.max_tokens || LLM_EXTRACTION.MAX_TOKENS,
-    });
+    };
+
+    // Add reasoning parameter if enabled (for models that support it like gpt-oss-120b)
+    if (LLM_EXTRACTION.ENABLE_REASONING) {
+      requestBody.reasoning = { enabled: true };
+    }
+
+    const response = await processor.chat.completions.create(requestBody);
 
     const result = response.choices?.[0]?.message?.content;
     if (result) {
