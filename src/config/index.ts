@@ -111,7 +111,7 @@ export const REDDIT = {
 } as const;
 
 // ============================================================================
-// CTR Weights for URL Ranking
+// CTR Weights for URL Ranking (inspired fro CTR thing)
 // ============================================================================
 
 export const CTR_WEIGHTS: Record<number, number> = {
@@ -132,6 +132,6 @@ export const CTR_WEIGHTS: Record<number, number> = {
 // ============================================================================
 
 export const LLM_EXTRACTION = {
-  MODEL: process.env.LLM_EXTRACTION_MODEL || 'anthropic/claude-3.5-sonnet',
-  MAX_TOKENS: 4000,
+  MODEL: process.env.LLM_EXTRACTION_MODEL || 'openrouter/gpt-oss-120b:nitro',
+  MAX_TOKENS: 8000,
 } as const;

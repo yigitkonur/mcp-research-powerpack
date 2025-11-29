@@ -393,6 +393,8 @@ Research Powerpack uses a **modular architecture**. Tools are automatically enab
 | `REDDIT_CLIENT_ID` + `SECRET` | `get_reddit_post` | Unlimited |
 | `SCRAPEDO_API_KEY` | `scrape_links` | 1,000 credits/mo |
 | `OPENROUTER_API_KEY` | `deep_research` + AI in `scrape_links` | Pay-as-you-go |
+| `RESEARCH_MODEL` | Model for `deep_research` | Default: `perplexity/sonar-deep-research` |
+| `LLM_EXTRACTION_MODEL` | Model for AI extraction in `scrape_links` | Default: `openrouter/gpt-oss-120b:nitro` |
 
 </div>
 
@@ -513,7 +515,7 @@ OPENROUTER_API_KEY=xxx
    OPENROUTER_API_KEY=sk-or-v1-xxxxx
    ```
 
-### Recommended Models
+### Recommended Models for Deep Research
 ```bash
 # Default (optimized for research)
 RESEARCH_MODEL=perplexity/sonar-deep-research
@@ -527,6 +529,20 @@ RESEARCH_MODEL=anthropic/claude-3.5-sonnet
 # Budget-friendly
 RESEARCH_MODEL=openai/gpt-4o-mini
 ```
+
+### Recommended Models for AI Extraction (`use_llm` in `scrape_links`)
+```bash
+# Default (fast and cost-effective for extraction)
+LLM_EXTRACTION_MODEL=openrouter/gpt-oss-120b:nitro
+
+# High quality extraction
+LLM_EXTRACTION_MODEL=anthropic/claude-3.5-sonnet
+
+# Budget-friendly
+LLM_EXTRACTION_MODEL=openai/gpt-4o-mini
+```
+
+> **Note:** `RESEARCH_MODEL` and `LLM_EXTRACTION_MODEL` are independent. You can use a powerful model for deep research and a faster/cheaper model for content extraction, or vice versa.
 
 </details>
 
