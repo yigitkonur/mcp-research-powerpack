@@ -5,6 +5,7 @@
  */
 
 import { REDDIT } from '../config/index.js';
+import { USER_AGENT_VERSION } from '../version.js';
 import {
   classifyError,
   fetchWithTimeout,
@@ -67,7 +68,8 @@ export function calculateCommentAllocation(postCount: number): CommentAllocation
 export class RedditClient {
   private token: string | null = null;
   private tokenExpiry = 0;
-  private userAgent = 'script:research-powerpack-mcp:v3.1.5 (by /u/research-powerpack)';
+  // User agent uses centralized version from package.json - auto-synced!
+  private userAgent = `script:${USER_AGENT_VERSION} (by /u/research-powerpack)`;
 
   constructor(private clientId: string, private clientSecret: string) {}
 

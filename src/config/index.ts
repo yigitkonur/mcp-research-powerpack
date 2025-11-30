@@ -3,6 +3,11 @@
  * All environment variables, constants, and LLM config in one place
  */
 
+import { VERSION, PACKAGE_NAME, PACKAGE_DESCRIPTION } from '../version.js';
+
+// Re-export version utilities for convenience
+export { VERSION, PACKAGE_NAME, PACKAGE_DESCRIPTION } from '../version.js';
+
 // ============================================================================
 // Environment Parsing
 // ============================================================================
@@ -40,10 +45,12 @@ export const RESEARCH = {
 // MCP Server Configuration
 // ============================================================================
 
+// Version is now automatically read from package.json via version.ts
+// No need to manually update version strings anymore!
 export const SERVER = {
-  NAME: 'research-powerpack-mcp',
-  VERSION: '3.1.5', // Updated to match package.json
-  DESCRIPTION: 'The ultimate research MCP toolkit with modular capabilities',
+  NAME: PACKAGE_NAME,
+  VERSION: VERSION,
+  DESCRIPTION: PACKAGE_DESCRIPTION,
 } as const;
 
 // ============================================================================
