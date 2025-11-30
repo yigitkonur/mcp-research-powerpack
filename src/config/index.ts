@@ -42,7 +42,7 @@ export const RESEARCH = {
 
 export const SERVER = {
   NAME: 'research-powerpack-mcp',
-  VERSION: '3.1.2', // Updated to match package.json
+  VERSION: '3.1.3', // Updated to match package.json
   DESCRIPTION: 'The ultimate research MCP toolkit with modular capabilities',
 } as const;
 
