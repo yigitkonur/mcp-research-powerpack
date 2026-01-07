@@ -151,6 +151,24 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
+or quick install (for MacOS):
+
+```
+cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | jq '.mcpServers["research-powerpack"] = {
+  "command": "npx",
+  "args": ["research-powerpack-mcp@latest"],
+  "disabled": false,
+  "env": {
+    "OPENROUTER_API_KEY": "xxx",
+    "REDDIT_CLIENT_ID": "xxx",
+    "REDDIT_CLIENT_SECRET": "xxx",
+    "RESEARCH_MODEL": "xxxx",
+    "SCRAPEDO_API_KEY": "xxx",
+    "SERPER_API_KEY": "xxxx"
+  }
+}' | tee ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
+
 #### Claude Code (CLI)
 
 One command to rule them all:
