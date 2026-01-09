@@ -8,6 +8,8 @@ import { RedditClient, calculateCommentAllocation, type PostResult, type Comment
 import { aggregateAndRankReddit, generateRedditEnhancedOutput } from '../utils/url-aggregator.js';
 import { REDDIT } from '../config/index.js';
 import { classifyError } from '../utils/errors.js';
+import { createLLMProcessor, processContentWithLLM } from '../services/llm-processor.js';
+import { getToolConfig } from '../config/loader.js';
 
 // ============================================================================
 // Formatters
@@ -91,6 +93,31 @@ export async function handleSearchReddit(
 interface GetRedditPostsOptions {
   fetchComments?: boolean;
   maxCommentsOverride?: number;
+  use_llm?: boolean;
+  what_to_extract?: string;
+}
+
+// Get extraction suffix from YAML config (fallback to hardcoded if not found)
+function getExtractionSuffix(): string {
+  const config = getToolConfig('get_reddit_post');
+  return config?.limits?.extraction_suffix as string || `
+---
+
+⚠️ IMPORTANT: Extract and synthesize the key insights, opinions, and recommendations from these Reddit discussions. Focus on:
+- Common themes and consensus across posts
+- Specific recommendations with context
+- Contrasting viewpoints and debates
+- Real-world experiences and lessons learned
+- Technical details and implementation tips
+
+Be comprehensive but concise. Prioritize actionable insights.
+
+---`;
+}
+
+function enhanceExtractionInstruction(instruction: string | undefined): string {
+  const base = instruction || 'Extract key insights, recommendations, and community consensus from these Reddit discussions.';
+  return `${base}\n\n${getExtractionSuffix()}`;
 }
 
 export async function handleGetRedditPosts(
@@ -101,7 +128,7 @@ export async function handleGetRedditPosts(
   options: GetRedditPostsOptions = {}
 ): Promise<string> {
   try {
-    const { fetchComments = true, maxCommentsOverride } = options;
+    const { fetchComments = true, maxCommentsOverride, use_llm = false, what_to_extract } = options;
 
     if (urls.length < REDDIT.MIN_POSTS) {
       return `# ❌ get_reddit_post: Validation Error\n\nMinimum ${REDDIT.MIN_POSTS} Reddit posts required. Received: ${urls.length}`;
@@ -145,6 +172,33 @@ export async function handleGetRedditPosts(
     md += `\n**Summary:** ✅ ${successful} successful | ❌ ${failed} failed`;
     if (batchResult.rateLimitHits > 0) {
       md += ` | ⚠️ ${batchResult.rateLimitHits} rate limit retries`;
+    }
+
+    // Apply LLM extraction if enabled
+    if (use_llm) {
+      const llmProcessor = createLLMProcessor();
+      if (llmProcessor) {
+        const enhancedInstruction = enhanceExtractionInstruction(what_to_extract);
+        const tokensPerUrl = Math.floor(32000 / urls.length); // Similar budget as scrape_links
+        
+        console.error(`[Reddit Tool] Applying LLM extraction (${tokensPerUrl} tokens)...`);
+        
+        const llmResult = await processContentWithLLM(
+          md,
+          { use_llm: true, what_to_extract: enhancedInstruction, max_tokens: tokensPerUrl },
+          llmProcessor
+        );
+
+        if (llmResult.processed) {
+          console.error(`[Reddit Tool] LLM extraction complete`);
+          return `# Reddit Posts Analysis (LLM Processed)\n\n**Posts Analyzed:** ${urls.length} | **Comment Budget:** ${commentsPerPost}/post\n\n---\n\n${llmResult.content}`;
+        } else {
+          console.error(`[Reddit Tool] LLM extraction skipped: ${llmResult.error || 'unknown reason'}`);
+          md += `\n\n⚠️ _LLM extraction was requested but failed: ${llmResult.error || 'unknown'}. Returning raw content._`;
+        }
+      } else {
+        md += `\n\n⚠️ _LLM extraction was requested but OPENROUTER_API_KEY is not set._`;
+      }
     }
 
     return md.trim();

@@ -170,6 +170,19 @@ tools:
       max_urls: 50
       recommended_urls: 20
       default_max_comments: 1000
+      extraction_suffix: |
+        ---
+        
+        ⚠️ IMPORTANT: Extract and synthesize the key insights from these Reddit discussions. Focus on:
+        - Common themes and community consensus
+        - Specific recommendations with reasoning
+        - Contrasting viewpoints and debates
+        - Real-world experiences and lessons learned
+        - Technical details and implementation tips
+        
+        Be comprehensive but concise. Prioritize actionable insights over noise.
+        
+        ---
     
     description: |
       **🔥 FETCH REDDIT POSTS - 2-50 URLs, RECOMMENDED 10-20+**
@@ -258,6 +271,36 @@ tools:
           - 20 posts: ~50 comments/post
           
           Only override if you need specific comment depth.
+
+      use_llm:
+        type: boolean
+        required: false
+        default: false
+        description: |
+          **Enable AI-powered content extraction (RECOMMENDED: true)**
+          
+          When enabled, processes Reddit content through LLM to:
+          - Extract key insights and community consensus
+          - Synthesize opinions across multiple posts
+          - Identify common recommendations and debates
+          - Filter noise and surface actionable information
+          
+          Cost: pennies (~$0.01 per batch)
+          Requires: OPENROUTER_API_KEY environment variable
+
+      what_to_extract:
+        type: string
+        required: false
+        description: |
+          **Extraction instructions for AI (used when use_llm=true)**
+          
+          Tell the AI what specific information to extract:
+          - "Extract recommendations for [topic] with pros/cons"
+          - "Summarize common issues and solutions mentioned"
+          - "Identify consensus on [specific question]"
+          
+          If not provided, defaults to general insight extraction.
+          More specific instructions = better extraction quality!
 
   # --------------------------------------------------------------------------
   # DEEP RESEARCH TOOL

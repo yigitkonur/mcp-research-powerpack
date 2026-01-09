@@ -63,6 +63,8 @@ const getRedditPostParamsSchema = z.object({
   urls: z.array(z.string()).min(2).max(50),
   fetch_comments: z.boolean().default(true),
   max_comments: z.number().default(100),
+  use_llm: z.boolean().default(false),
+  what_to_extract: z.string().optional(),
 });
 
 // ============================================================================
@@ -92,6 +94,8 @@ async function getRedditPostHandler(params: unknown): Promise<string> {
     {
       fetchComments: p.fetch_comments,
       maxCommentsOverride: p.max_comments !== 100 ? p.max_comments : undefined,
+      use_llm: p.use_llm,
+      what_to_extract: p.what_to_extract,
     }
   );
 }
