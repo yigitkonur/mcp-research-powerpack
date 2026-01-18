@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # Note: Don't set registry-url when using OIDC - it injects old tokens
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
