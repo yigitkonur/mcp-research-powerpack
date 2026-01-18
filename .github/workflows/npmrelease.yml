@@ -42,6 +42,9 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Upgrade npm (OIDC requires npm 11.5.1+)
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci
 
@@ -89,7 +92,10 @@ jobs:
 
       - name: Publish to NPM (OIDC)
         if: steps.version_check.outputs.exists == 'false' || steps.bump.outputs.bumped == 'true'
+        env:
+          NPM_CONFIG_PROVENANCE: true
         run: |
+          echo "📋 npm version: $(npm --version)"
           PUBLISH_VERSION=$(node -p "require('./package.json').version")
           echo "📦 Publishing v$PUBLISH_VERSION to npm using OIDC..."
           npm publish --access public --provenance
