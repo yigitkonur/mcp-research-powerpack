@@ -1,6 +1,6 @@
 {
   "name": "research-powerpack-mcp",
-  "version": "3.4.6",
+  "version": "3.4.7",
   "description": "The ultimate research MCP toolkit: Reddit mining, web search with CTR aggregation, AI-powered deep research, and intelligent web scraping - all in one modular package",
   "type": "module",
   "main": "dist/index.js",
