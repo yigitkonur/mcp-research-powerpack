@@ -127,6 +127,32 @@ process.once('SIGINT', () => {
 });
 
 // ============================================================================
+// Stdin disconnect detection
+// The MCP SDK's StdioServerTransport does NOT listen for stdin 'close'/'end'.
+// When the parent process disconnects (closes the pipe), stdin emits these
+// events but nobody handles them — Node.js keeps polling the dead fd at 100%
+// CPU. We fix this by detecting the disconnect and exiting cleanly.
+// ============================================================================
+
+process.stdin.on('close', () => {
+  console.error(`[MCP Server] stdin closed (parent disconnected) at ${new Date().toISOString()}, shutting down`);
+  gracefulShutdown(0);
+});
+
+process.stdin.on('end', () => {
+  console.error(`[MCP Server] stdin ended (parent disconnected) at ${new Date().toISOString()}, shutting down`);
+  gracefulShutdown(0);
+});
+
+// Also handle stdout errors (broken pipe when parent is gone)
+process.stdout.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EPIPE' || err.code === 'ERR_STREAM_DESTROYED') {
+    console.error(`[MCP Server] stdout broken pipe at ${new Date().toISOString()}, shutting down`);
+    gracefulShutdown(0);
+  }
+});
+
+// ============================================================================
 // Start Server
 // ============================================================================
 
