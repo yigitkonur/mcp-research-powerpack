@@ -14,6 +14,7 @@ import {
   type StructuredError,
 } from '../utils/errors.js';
 import { pMap, pMapSettled } from '../utils/concurrency.js';
+import { mcpLog } from '../utils/logger.js';
 
 interface Post {
   title: string;
@@ -135,7 +136,7 @@ export class RedditClient {
 
         if (!res.ok) {
           const text = await res.text().catch(() => '');
-          console.error(`[Reddit] Auth failed (${res.status}): ${text}`);
+          mcpLog('error', `Auth failed (${res.status}): ${text}`, 'reddit');
 
           // 401/403 are not retryable - invalidate cache
           if (res.status === 401 || res.status === 403) {
@@ -155,7 +156,7 @@ export class RedditClient {
 
         const data = await res.json() as { access_token?: string; expires_in?: number };
         if (!data.access_token) {
-          console.error('[Reddit] Auth response missing access_token');
+          mcpLog('error', 'Auth response missing access_token', 'reddit');
           return null;
         }
 
@@ -166,7 +167,7 @@ export class RedditClient {
 
       } catch (error) {
         const err = classifyError(error);
-        console.error(`[Reddit] Auth error (attempt ${attempt + 1}): ${err.message}`);
+        mcpLog('error', `Auth error (attempt ${attempt + 1}): ${err.message}`, 'reddit');
 
         // Invalidate cache on auth errors
         if (err.code === ErrorCode.AUTH_ERROR) {
@@ -225,7 +226,7 @@ export class RedditClient {
         // Rate limited - always retry with backoff
         if (res.status === 429) {
           const delay = REDDIT.RETRY_DELAYS[attempt] || 32000;
-          console.error(`[Reddit] Rate limited. Retry ${attempt + 1}/${REDDIT.RETRY_COUNT} after ${delay}ms`);
+          mcpLog('warning', `Rate limited. Retry ${attempt + 1}/${REDDIT.RETRY_COUNT} after ${delay}ms`, 'reddit');
           await sleep(delay);
           continue;
         }
@@ -241,7 +242,7 @@ export class RedditClient {
 
           if (lastError.retryable && attempt < REDDIT.RETRY_COUNT - 1) {
             const delay = REDDIT.RETRY_DELAYS[attempt] || 2000;
-            console.error(`[Reddit] API error ${res.status}. Retry ${attempt + 1}/${REDDIT.RETRY_COUNT}`);
+            mcpLog('warning', `API error ${res.status}. Retry ${attempt + 1}/${REDDIT.RETRY_COUNT}`, 'reddit');
             await sleep(delay);
             continue;
           }
@@ -292,7 +293,7 @@ export class RedditClient {
 
         if (attempt < REDDIT.RETRY_COUNT - 1) {
           const delay = REDDIT.RETRY_DELAYS[attempt] || 2000;
-          console.error(`[Reddit] ${lastError.code}: ${lastError.message}. Retry ${attempt + 1}/${REDDIT.RETRY_COUNT}`);
+          mcpLog('warning', `${lastError.code}: ${lastError.message}. Retry ${attempt + 1}/${REDDIT.RETRY_COUNT}`, 'reddit');
           await sleep(delay);
         }
       }
@@ -363,13 +364,13 @@ export class RedditClient {
     const allocation = calculateCommentAllocation(urls.length);
     const commentsPerPost = fetchComments ? (maxCommentsOverride || allocation.perPostCapped) : 0;
 
-    console.error(`[Reddit] Fetching ${urls.length} posts in ${totalBatches} batch(es), ${commentsPerPost} comments/post`);
+    mcpLog('info', `Fetching ${urls.length} posts in ${totalBatches} batch(es), ${commentsPerPost} comments/post`, 'reddit');
 
     for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
       const startIdx = batchNum * REDDIT.BATCH_SIZE;
       const batchUrls = urls.slice(startIdx, startIdx + REDDIT.BATCH_SIZE);
 
-      console.error(`[Reddit] Batch ${batchNum + 1}/${totalBatches} (${batchUrls.length} posts)`);
+      mcpLog('info', `Batch ${batchNum + 1}/${totalBatches} (${batchUrls.length} posts)`, 'reddit');
 
       // Limit to 5 concurrent Reddit API calls within each batch
       const batchResults = await pMapSettled(
@@ -395,10 +396,10 @@ export class RedditClient {
       try {
         onBatchComplete?.(batchNum + 1, totalBatches, allResults.size);
       } catch (callbackError) {
-        console.error(`[Reddit] onBatchComplete callback error:`, callbackError);
+        mcpLog('error', `onBatchComplete callback error: ${callbackError}`, 'reddit');
       }
 
-      console.error(`[Reddit] Batch ${batchNum + 1} complete (${allResults.size}/${urls.length})`);
+      mcpLog('info', `Batch ${batchNum + 1} complete (${allResults.size}/${urls.length})`, 'reddit');
 
       // Small delay between batches
       if (batchNum < totalBatches - 1) {

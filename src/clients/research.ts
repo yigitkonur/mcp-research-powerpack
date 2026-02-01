@@ -12,6 +12,7 @@ import {
   ErrorCode,
   type StructuredError,
 } from '../utils/errors.js';
+import { mcpLog } from '../utils/logger.js';
 
 interface ResearchParams {
   question: string;
@@ -206,7 +207,7 @@ export class ResearchClient {
     for (let attempt = 0; attempt <= RESEARCH_RETRY_CONFIG.maxRetries; attempt++) {
       try {
         if (attempt > 0) {
-          console.error(`[Research] Retry attempt ${attempt}/${RESEARCH_RETRY_CONFIG.maxRetries} for ${model}`);
+          mcpLog('warning', `Retry attempt ${attempt}/${RESEARCH_RETRY_CONFIG.maxRetries} for ${model}`, 'research');
         }
 
         const response = await this.client.chat.completions.create(requestPayload as any);
@@ -223,7 +224,7 @@ export class ResearchClient {
 
           if (attempt < RESEARCH_RETRY_CONFIG.maxRetries) {
             const delayMs = this.calculateBackoff(attempt);
-            console.error(`[Research] Empty response, retrying in ${delayMs}ms...`);
+            mcpLog('warning', `Empty response, retrying in ${delayMs}ms...`, 'research');
             await sleep(delayMs);
             continue;
           }
@@ -254,14 +255,12 @@ export class ResearchClient {
         lastError = classifyError(error);
 
         const err = error as { status?: number; message?: string };
-        console.error(`[Research] Error with ${model} (attempt ${attempt + 1}): ${lastError.message}`, {
-          status: err.status,
-        });
+        mcpLog('error', `Error with ${model} (attempt ${attempt + 1}): ${lastError.message} (status: ${err.status})`, 'research');
 
         // Check if we should retry
         if (this.isRetryableError(error) && attempt < RESEARCH_RETRY_CONFIG.maxRetries) {
           const delayMs = this.calculateBackoff(attempt);
-          console.error(`[Research] Retrying in ${delayMs}ms...`);
+          mcpLog('warning', `Retrying in ${delayMs}ms...`, 'research');
           await sleep(delayMs);
           continue;
         }
@@ -325,7 +324,7 @@ export class ResearchClient {
     const options = { temperature, reasoningEffort, maxTokens, maxSearchResults, responseFormat };
 
     // Try primary model first
-    console.error(`[Research] Trying primary model: ${RESEARCH.MODEL}`);
+    mcpLog('info', `Trying primary model: ${RESEARCH.MODEL}`, 'research');
     const primaryResult = await this.executeResearch(RESEARCH.MODEL, messages, options);
 
     if (!primaryResult.error) {
@@ -334,7 +333,7 @@ export class ResearchClient {
 
     // Primary failed - try fallback model if different
     if (RESEARCH.FALLBACK_MODEL && RESEARCH.FALLBACK_MODEL !== RESEARCH.MODEL) {
-      console.error(`[Research] Primary model failed, trying fallback: ${RESEARCH.FALLBACK_MODEL}`);
+      mcpLog('warning', `Primary model failed, trying fallback: ${RESEARCH.FALLBACK_MODEL}`, 'research');
       const fallbackResult = await this.executeResearch(RESEARCH.FALLBACK_MODEL, messages, options);
 
       if (!fallbackResult.error) {
@@ -342,7 +341,7 @@ export class ResearchClient {
       }
 
       // Both failed - return the fallback error (more recent)
-      console.error(`[Research] Both models failed. Primary: ${primaryResult.error?.message}, Fallback: ${fallbackResult.error?.message}`);
+      mcpLog('error', `Both models failed. Primary: ${primaryResult.error?.message}, Fallback: ${fallbackResult.error?.message}`, 'research');
       return {
         ...fallbackResult,
         content: `Research failed with both models. Primary (${RESEARCH.MODEL}): ${primaryResult.error?.message}. Fallback (${RESEARCH.FALLBACK_MODEL}): ${fallbackResult.error?.message}`,
@@ -350,7 +349,7 @@ export class ResearchClient {
     }
 
     // No fallback or same model - return primary error
-    console.error(`[Research] All attempts failed: ${primaryResult.error?.message}`);
+    mcpLog('error', `All attempts failed: ${primaryResult.error?.message}`, 'research');
     return {
       ...primaryResult,
       content: `Research failed: ${primaryResult.error?.message}`,

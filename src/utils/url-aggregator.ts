@@ -267,6 +267,37 @@ export function generateEnhancedOutput(
   lines.push(`- **Unique URLs Found:** ${totalUniqueUrls} — top by frequency: ${urlFreqList}`);
   lines.push(`- **Consensus Threshold:** ≥${frequencyThreshold} appearances`);
   lines.push('');
+
+  // Next Steps - actionable follow-up commands
+  lines.push('---');
+  lines.push('');
+  lines.push('### ➡️ Next Steps');
+  lines.push('');
+
+  // Generate URL list for scrape_links command
+  const topUrls = rankedUrls.slice(0, Math.min(5, rankedUrls.length));
+  if (topUrls.length > 0) {
+    const urlList = topUrls.map(u => `"${u.url}"`).join(', ');
+    lines.push(`**Scrape top consensus URLs for full content:**`);
+    lines.push('```');
+    lines.push(`scrape_links(urls=[${urlList}], use_llm=true, what_to_extract="Extract key insights, recommendations, and actionable information")`);
+    lines.push('```');
+    lines.push('');
+  }
+
+  // Reddit follow-up
+  lines.push(`**Get community perspective from Reddit:**`);
+  lines.push('```');
+  lines.push(`search_reddit(queries=["${allKeywords[0] || 'topic'} reddit", "${allKeywords[0] || 'topic'} recommendations", "${allKeywords[0] || 'topic'} best practices"])`);
+  lines.push('```');
+  lines.push('');
+
+  // Deep research follow-up
+  lines.push(`**Synthesize findings with deep research:**`);
+  lines.push('```');
+  lines.push(`deep_research(questions=[{question: "Based on web search results, what are the key findings, best practices, and recommendations for [topic]?"}])`);
+  lines.push('```');
+  lines.push('');
   
   return lines.join('\n');
 }
@@ -615,6 +646,40 @@ export function generateRedditEnhancedOutput(
   lines.push(`- **Queries:** ${allQueries.map(q => `"${q}"`).join(', ')}`);
   lines.push(`- **Unique Posts Found:** ${totalUniqueUrls}`);
   lines.push(`- **High-Consensus Posts:** ${consensusUrls.length}`);
+  lines.push('');
+
+  // Next Steps - actionable follow-up commands
+  lines.push('---');
+  lines.push('');
+  lines.push('### ➡️ Next Steps');
+  lines.push('');
+
+  // Generate URL list for get_reddit_post command
+  const topUrls = rankedUrls.slice(0, Math.min(10, rankedUrls.length));
+  if (topUrls.length >= 2) {
+    const urlList = topUrls.map(u => `"${u.url}"`).join(', ');
+    lines.push(`**Fetch full posts with comments:**`);
+    lines.push('```');
+    lines.push(`get_reddit_post(urls=[${urlList}], fetch_comments=true)`);
+    lines.push('```');
+    lines.push('');
+  }
+
+  // Suggest LLM extraction if there are consensus posts
+  if (consensusUrls.length > 0) {
+    const consensusUrlList = consensusUrls.slice(0, 5).map(u => `"${u.url}"`).join(', ');
+    lines.push(`**Extract insights with AI (recommended for consensus posts):**`);
+    lines.push('```');
+    lines.push(`get_reddit_post(urls=[${consensusUrlList}], fetch_comments=true, use_llm=true, what_to_extract="Extract key recommendations, consensus opinions, and practical advice")`);
+    lines.push('```');
+    lines.push('');
+  }
+
+  // Deep research follow-up
+  lines.push(`**Synthesize findings with deep research:**`);
+  lines.push('```');
+  lines.push(`deep_research(questions=[{question: "Based on these Reddit discussions about [topic], what are the main recommendations, common issues, and best practices?"}])`);
+  lines.push('```');
   lines.push('');
 
   return lines.join('\n');

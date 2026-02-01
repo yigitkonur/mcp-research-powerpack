@@ -13,6 +13,7 @@ import {
   type StructuredError,
 } from '../utils/errors.js';
 import { pMap } from '../utils/concurrency.js';
+import { mcpLog } from '../utils/logger.js';
 
 interface SearchResult {
   title: string;
@@ -112,7 +113,7 @@ export class SearchClient {
     for (let attempt = 0; attempt <= SEARCH_RETRY_CONFIG.maxRetries; attempt++) {
       try {
         if (attempt > 0) {
-          console.error(`[Search] Retry attempt ${attempt}/${SEARCH_RETRY_CONFIG.maxRetries}`);
+          mcpLog('warning', `Retry attempt ${attempt}/${SEARCH_RETRY_CONFIG.maxRetries}`, 'search');
         }
 
         const searchQueries = keywords.map(keyword => ({ q: keyword }));
@@ -133,7 +134,7 @@ export class SearchClient {
 
           if (this.isRetryable(response.status) && attempt < SEARCH_RETRY_CONFIG.maxRetries) {
             const delayMs = this.calculateBackoff(attempt);
-            console.error(`[Search] API returned ${response.status}, retrying in ${delayMs}ms...`);
+            mcpLog('warning', `API returned ${response.status}, retrying in ${delayMs}ms...`, 'search');
             await sleep(delayMs);
             continue;
           }
@@ -195,7 +196,7 @@ export class SearchClient {
 
         if (this.isRetryable(undefined, error) && attempt < SEARCH_RETRY_CONFIG.maxRetries) {
           const delayMs = this.calculateBackoff(attempt);
-          console.error(`[Search] ${lastError.code}: ${lastError.message}, retrying in ${delayMs}ms...`);
+          mcpLog('warning', `${lastError.code}: ${lastError.message}, retrying in ${delayMs}ms...`, 'search');
           await sleep(delayMs);
           continue;
         }
@@ -240,11 +241,11 @@ export class SearchClient {
         if (!res.ok) {
           if (this.isRetryable(res.status) && attempt < SEARCH_RETRY_CONFIG.maxRetries) {
             const delayMs = this.calculateBackoff(attempt);
-            console.error(`[Search Reddit] ${res.status}, retrying in ${delayMs}ms...`);
+            mcpLog('warning', `Reddit search ${res.status}, retrying in ${delayMs}ms...`, 'search');
             await sleep(delayMs);
             continue;
           }
-          console.error(`[Search Reddit] Failed with status ${res.status}`);
+          mcpLog('error', `Reddit search failed with status ${res.status}`, 'search');
           return [];
         }
 
@@ -260,11 +261,11 @@ export class SearchClient {
         const err = classifyError(error);
         if (this.isRetryable(undefined, error) && attempt < SEARCH_RETRY_CONFIG.maxRetries) {
           const delayMs = this.calculateBackoff(attempt);
-          console.error(`[Search Reddit] ${err.code}, retrying in ${delayMs}ms...`);
+          mcpLog('warning', `Reddit search ${err.code}, retrying in ${delayMs}ms...`, 'search');
           await sleep(delayMs);
           continue;
         }
-        console.error(`[Search Reddit] Failed: ${err.message}`);
+        mcpLog('error', `Reddit search failed: ${err.message}`, 'search');
         return [];
       }
     }

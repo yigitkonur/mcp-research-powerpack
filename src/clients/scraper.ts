@@ -268,7 +268,7 @@ export class ScraperClient {
 
       // Collect failure reason and try next mode
       attemptResults.push(`${attempt.description}: ${result.error?.message || result.statusCode}`);
-      console.error(`[Scraper] Failed with ${attempt.description} (${result.statusCode}), trying next fallback...`);
+      mcpLog('warning', `Failed with ${attempt.description} (${result.statusCode}), trying next fallback...`, 'scraper');
     }
 
     // All fallbacks exhausted - return last result with aggregated error info
@@ -315,14 +315,14 @@ export class ScraperClient {
     const allResults: Array<ScrapeResponse & { url: string }> = [];
     let rateLimitHits = 0;
 
-    console.error(`[Scraper] Starting batch processing: ${urls.length} URLs in ${totalBatches} batch(es)`);
+    mcpLog('info', `Starting batch processing: ${urls.length} URLs in ${totalBatches} batch(es)`, 'scraper');
 
     for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
       const startIdx = batchNum * SCRAPER.BATCH_SIZE;
       const endIdx = Math.min(startIdx + SCRAPER.BATCH_SIZE, urls.length);
       const batchUrls = urls.slice(startIdx, endIdx);
 
-      console.error(`[Scraper] Processing batch ${batchNum + 1}/${totalBatches} (${batchUrls.length} URLs)`);
+      mcpLog('info', `Processing batch ${batchNum + 1}/${totalBatches} (${batchUrls.length} URLs)`, 'scraper');
 
       // Limit to 10 concurrent scrapes within each batch to prevent connection exhaustion
       const batchResults = await pMapSettled(
@@ -347,7 +347,7 @@ export class ScraperClient {
           // This shouldn't happen since scrapeWithFallback never throws,
           // but handle it gracefully just in case
           const errorMsg = result.reason instanceof Error ? result.reason.message : String(result.reason);
-          console.error(`[Scraper] Unexpected rejection for ${url}: ${errorMsg}`);
+          mcpLog('error', `Unexpected rejection for ${url}: ${errorMsg}`, 'scraper');
 
           allResults.push({
             url,
@@ -363,10 +363,10 @@ export class ScraperClient {
       try {
         onBatchComplete?.(batchNum + 1, totalBatches, allResults.length);
       } catch (callbackError) {
-        console.error(`[Scraper] onBatchComplete callback error:`, callbackError);
+        mcpLog('error', `onBatchComplete callback error: ${callbackError}`, 'scraper');
       }
 
-      console.error(`[Scraper] Completed batch ${batchNum + 1}/${totalBatches} (${allResults.length}/${urls.length} total)`);
+      mcpLog('info', `Completed batch ${batchNum + 1}/${totalBatches} (${allResults.length}/${urls.length} total)`, 'scraper');
 
       // Small delay between batches to avoid overwhelming the API
       if (batchNum < totalBatches - 1) {
