@@ -8,6 +8,7 @@ import { ResearchClient, type ResearchResponse } from '../clients/research.js';
 import { FileAttachmentService } from '../services/file-attachment.js';
 import { RESEARCH } from '../config/index.js';
 import { classifyError } from '../utils/errors.js';
+import { pMap } from '../utils/concurrency.js';
 
 // Constants
 const TOTAL_TOKEN_BUDGET = 32000;
@@ -110,8 +111,10 @@ export async function handleDeepResearch(
   const fileService = new FileAttachmentService();
   const results: QuestionResult[] = [];
 
-  // Process all questions in parallel - each handler NEVER throws
-  const researchPromises = questions.map(async (q, index): Promise<QuestionResult> => {
+  // Process questions with bounded concurrency (max 3 concurrent LLM calls)
+  // Each research call involves web search + LLM processing, so unbounded parallelism
+  // causes CPU spikes and potential rate limiting on the LLM provider.
+  const allResults = await pMap(questions, async (q, index): Promise<QuestionResult> => {
     try {
       // Enhance question with file attachments if present
       let enhancedQuestion = q.question;
@@ -161,9 +164,8 @@ export async function handleDeepResearch(
         error: structuredError.message,
       };
     }
-  });
+  }, 3); // Max 3 concurrent research calls
 
-  const allResults = await Promise.all(researchPromises);
   results.push(...allResults);
 
   // Build markdown output

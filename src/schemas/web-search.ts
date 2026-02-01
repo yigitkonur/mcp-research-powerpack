@@ -16,7 +16,7 @@ const keywordsSchema = z
     required_error: 'web_search: Keywords array is required',
     invalid_type_error: 'web_search: Keywords must be an array'
   })
-  .min(3, { message: 'web_search: MINIMUM 3 keywords required. You provided {#}. Add {#} more diverse keywords covering different perspectives.' })
+  .min(3, { message: 'web_search: MINIMUM 3 keywords required. Add more diverse keywords covering different perspectives.' })
   .max(100, { message: 'web_search: Maximum 100 keywords allowed per request' })
   .describe('Array of search keywords (MINIMUM 3, RECOMMENDED 5-7, MAX 100). Each keyword runs as a separate Google search in parallel. Use diverse keywords covering different angles for comprehensive results.');
 

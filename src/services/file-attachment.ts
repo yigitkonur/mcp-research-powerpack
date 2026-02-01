@@ -2,9 +2,9 @@
  * File attachment service for reading and formatting file contents
  */
 
-import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
+import { pMap } from '../utils/concurrency.js';
 
 interface FileAttachment {
   path: string;
@@ -29,20 +29,16 @@ export class FileAttachmentService {
       return '';
     }
 
-    const results = await Promise.all(
-      attachments.map((attachment) => this.formatSingleFile(attachment))
-    );
+    const results = await pMap(attachments, (attachment) => this.formatSingleFile(attachment), 5);
 
     // Build the attachments section
-    let output = '\n\n---\n\n# 📎 ATTACHED FILES\n\n';
-    output += `*${results.length} file${results.length > 1 ? 's' : ''} attached for context*\n\n`;
-
+    const parts: string[] = ['\n\n---\n\n# 📎 ATTACHED FILES\n\n'];
+    parts.push(`*${results.length} file${results.length > 1 ? 's' : ''} attached for context*\n\n`);
     for (const result of results) {
-      output += result.content;
-      output += '\n\n';
+      parts.push(result.content);
+      parts.push('\n\n');
     }
-
-    return output;
+    return parts.join('');
   }
 
   /**
@@ -52,7 +48,9 @@ export class FileAttachmentService {
     const { path, start_line, end_line, description } = attachment;
 
     // Check if file exists
-    if (!existsSync(path)) {
+    try {
+      await access(path);
+    } catch {
       return {
         success: false,
         path,
@@ -120,36 +118,36 @@ export class FileAttachmentService {
    * Format code block with line numbers and smart truncation
    */
   private formatCodeBlock(lines: string[], language: string, startIdx: number): string {
-    let output = `\`\`\`${language.toLowerCase()}\n`;
+    const parts: string[] = [`\`\`\`${language.toLowerCase()}\n`];
 
     // Smart truncation for very large files (keep first 500 lines + last 100 lines)
     if (lines.length > 600) {
       // First 500 lines
       const firstLines = lines.slice(0, 500);
-      firstLines.forEach((line, idx) => {
+      for (let idx = 0; idx < firstLines.length; idx++) {
         const lineNumber = startIdx + idx + 1;
-        output += `${lineNumber.toString().padStart(4, ' ')}: ${line}\n`;
-      });
+        parts.push(`${lineNumber.toString().padStart(4, ' ')}: ${firstLines[idx]}\n`);
+      }
 
       // Truncation marker
-      output += `\n... [${lines.length - 600} lines truncated for brevity] ...\n\n`;
+      parts.push(`\n... [${lines.length - 600} lines truncated for brevity] ...\n\n`);
 
       // Last 100 lines
       const lastLines = lines.slice(-100);
-      lastLines.forEach((line, idx) => {
+      for (let idx = 0; idx < lastLines.length; idx++) {
         const lineNumber = startIdx + lines.length - 100 + idx + 1;
-        output += `${lineNumber.toString().padStart(4, ' ')}: ${line}\n`;
-      });
+        parts.push(`${lineNumber.toString().padStart(4, ' ')}: ${lastLines[idx]}\n`);
+      }
     } else {
       // Show all lines with numbers
-      lines.forEach((line, idx) => {
+      for (let idx = 0; idx < lines.length; idx++) {
         const lineNumber = startIdx + idx + 1;
-        output += `${lineNumber.toString().padStart(4, ' ')}: ${line}\n`;
-      });
+        parts.push(`${lineNumber.toString().padStart(4, ' ')}: ${lines[idx]}\n`);
+      }
     }
 
-    output += '```';
-    return output;
+    parts.push('```');
+    return parts.join('');
   }
 
   /**

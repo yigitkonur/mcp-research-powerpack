@@ -78,7 +78,7 @@ const env = parseEnv();
  */
 async function searchRedditHandler(params: unknown): Promise<string> {
   const p = params as z.infer<typeof searchRedditParamsSchema>;
-  return handleSearchReddit(p.queries, env.SEARCH_API_KEY!, p.date_after);
+  return handleSearchReddit(p.queries, env.SEARCH_API_KEY || '', p.date_after);
 }
 
 /**
@@ -88,8 +88,8 @@ async function getRedditPostHandler(params: unknown): Promise<string> {
   const p = params as z.infer<typeof getRedditPostParamsSchema>;
   return handleGetRedditPosts(
     p.urls,
-    env.REDDIT_CLIENT_ID!,
-    env.REDDIT_CLIENT_SECRET!,
+    env.REDDIT_CLIENT_ID || '',
+    env.REDDIT_CLIENT_SECRET || '',
     p.max_comments,
     {
       fetchComments: p.fetch_comments,

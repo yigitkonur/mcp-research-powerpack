@@ -12,6 +12,7 @@ import {
   ErrorCode,
   type StructuredError,
 } from '../utils/errors.js';
+import { pMap } from '../utils/concurrency.js';
 
 interface SearchResult {
   title: string;
@@ -52,6 +53,11 @@ const SEARCH_RETRY_CONFIG = {
 } as const;
 
 const RETRYABLE_SEARCH_CODES = new Set([429, 500, 502, 503, 504]);
+
+// Pre-compiled regex patterns for Reddit search
+const REDDIT_SITE_REGEX = /site:\s*reddit\.com/i;
+const REDDIT_SUBREDDIT_SUFFIX_REGEX = / : r\/\w+$/;
+const REDDIT_SUFFIX_REGEX = / - Reddit$/;
 
 export class SearchClient {
   private apiKey: string;
@@ -216,7 +222,7 @@ export class SearchClient {
       return [];
     }
 
-    let q = /site:\s*reddit\.com/i.test(query) ? query : `${query} site:reddit.com`;
+    let q = REDDIT_SITE_REGEX.test(query) ? query : `${query} site:reddit.com`;
 
     if (dateAfter) {
       q += ` after:${dateAfter}`;
@@ -244,7 +250,7 @@ export class SearchClient {
 
         const data = await res.json() as { organic?: Array<{ title: string; link: string; snippet: string; date?: string }> };
         return (data.organic || []).map((r) => ({
-          title: (r.title || '').replace(/ : r\/\w+$/, '').replace(/ - Reddit$/, ''),
+          title: (r.title || '').replace(REDDIT_SUBREDDIT_SUFFIX_REGEX, '').replace(REDDIT_SUFFIX_REGEX, ''),
           url: r.link || '',
           snippet: r.snippet || '',
           date: r.date,
@@ -267,17 +273,19 @@ export class SearchClient {
   }
 
   /**
-   * Search Reddit with multiple queries in parallel
-   * NEVER throws - uses Promise.allSettled pattern
+   * Search Reddit with multiple queries (bounded concurrency)
+   * NEVER throws - searchReddit never throws, pMap preserves order
    */
   async searchRedditMultiple(queries: string[], dateAfter?: string): Promise<Map<string, RedditSearchResult[]>> {
     if (queries.length === 0) {
       return new Map();
     }
 
-    // All searchReddit calls never throw, so we can use Promise.all safely
-    const results = await Promise.all(
-      queries.map(q => this.searchReddit(q, dateAfter))
+    // Limit to 8 concurrent Serper API calls to prevent CPU spikes & rate limits
+    const results = await pMap(
+      queries,
+      q => this.searchReddit(q, dateAfter),
+      8
     );
 
     return new Map(queries.map((q, i) => [q, results[i] || []]));

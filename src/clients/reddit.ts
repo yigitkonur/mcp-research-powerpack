@@ -13,6 +13,7 @@ import {
   ErrorCode,
   type StructuredError,
 } from '../utils/errors.js';
+import { pMap, pMapSettled } from '../utils/concurrency.js';
 
 interface Post {
   title: string;
@@ -74,6 +75,9 @@ let cachedTokenExpiry = 0;
 // Token cache logging only when DEBUG env is set
 const DEBUG_TOKEN_CACHE = process.env.DEBUG_REDDIT === 'true';
 
+// Pending auth promise for deduplicating concurrent auth calls
+let pendingAuthPromise: Promise<string | null> | null = null;
+
 export class RedditClient {
   // Instance-level references (now point to module cache)
   // User agent uses centralized version from package.json - auto-synced!
@@ -83,7 +87,8 @@ export class RedditClient {
 
   /**
    * Authenticate with Reddit API with retry logic
-   * Uses module-level token cache for sharing across instances
+   * Uses module-level token cache and promise deduplication to prevent
+   * concurrent auth calls from firing multiple token requests
    * Returns null on failure instead of throwing
    */
   private async auth(): Promise<string | null> {
@@ -93,6 +98,24 @@ export class RedditClient {
       return cachedToken;
     }
 
+    // Deduplicate concurrent auth calls - if one is already in flight, await it
+    if (pendingAuthPromise) {
+      if (DEBUG_TOKEN_CACHE) console.error('[RedditClient] Auth already in flight, awaiting...');
+      return pendingAuthPromise;
+    }
+
+    pendingAuthPromise = this.performAuth();
+    try {
+      return await pendingAuthPromise;
+    } finally {
+      pendingAuthPromise = null;
+    }
+  }
+
+  /**
+   * Internal auth implementation - called only once per cache miss
+   */
+  private async performAuth(): Promise<string | null> {
     if (DEBUG_TOKEN_CACHE) console.error('[RedditClient] Token cache MISS - authenticating');
 
     const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
@@ -316,8 +339,11 @@ export class RedditClient {
 
   async getPosts(urls: string[], maxComments = 100): Promise<Map<string, PostResult | Error>> {
     if (urls.length <= REDDIT.BATCH_SIZE) {
-      const results = await Promise.all(
-        urls.map(u => this.getPost(u, maxComments).catch(e => e as Error))
+      // Limit to 5 concurrent Reddit API calls
+      const results = await pMap(
+        urls,
+        u => this.getPost(u, maxComments).catch(e => e as Error),
+        5
       );
       return new Map(urls.map((u, i) => [u, results[i]]));
     }
@@ -345,8 +371,11 @@ export class RedditClient {
 
       console.error(`[Reddit] Batch ${batchNum + 1}/${totalBatches} (${batchUrls.length} posts)`);
 
-      const batchResults = await Promise.allSettled(
-        batchUrls.map(url => this.getPost(url, commentsPerPost))
+      // Limit to 5 concurrent Reddit API calls within each batch
+      const batchResults = await pMapSettled(
+        batchUrls,
+        url => this.getPost(url, commentsPerPost),
+        5
       );
 
       for (let i = 0; i < batchResults.length; i++) {

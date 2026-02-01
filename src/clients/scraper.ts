@@ -12,6 +12,7 @@ import {
   ErrorCode,
   type StructuredError,
 } from '../utils/errors.js';
+import { pMapSettled } from '../utils/concurrency.js';
 
 interface ScrapeRequest {
   url: string;
@@ -322,9 +323,11 @@ export class ScraperClient {
 
       console.error(`[Scraper] Processing batch ${batchNum + 1}/${totalBatches} (${batchUrls.length} URLs)`);
 
-      // Promise.allSettled never throws
-      const batchResults = await Promise.allSettled(
-        batchUrls.map(url => this.scrapeWithFallback(url, options))
+      // Limit to 10 concurrent scrapes within each batch to prevent connection exhaustion
+      const batchResults = await pMapSettled(
+        batchUrls,
+        url => this.scrapeWithFallback(url, options),
+        10
       );
 
       for (let i = 0; i < batchResults.length; i++) {
@@ -378,7 +381,8 @@ export class ScraperClient {
    * NEVER throws
    */
   private async processBatch(urls: string[], options: { timeout?: number }): Promise<Array<ScrapeResponse & { url: string }>> {
-    const results = await Promise.allSettled(urls.map(url => this.scrapeWithFallback(url, options)));
+    // Limit to 10 concurrent scrapes to prevent connection exhaustion
+    const results = await pMapSettled(urls, url => this.scrapeWithFallback(url, options), 10);
 
     return results.map((result, index) => {
       const url = urls[index] || '';

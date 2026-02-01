@@ -60,13 +60,17 @@ interface EnvConfig {
   REDDIT_CLIENT_SECRET: string | undefined;
 }
 
+let cachedEnv: EnvConfig | null = null;
+
 export function parseEnv(): EnvConfig {
-  return {
+  if (cachedEnv) return cachedEnv;
+  cachedEnv = {
     SCRAPER_API_KEY: process.env.SCRAPEDO_API_KEY || '',
     SEARCH_API_KEY: process.env.SERPER_API_KEY || undefined,
     REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID || undefined,
     REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET || undefined,
   };
+  return cachedEnv;
 }
 
 // ============================================================================

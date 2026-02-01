@@ -652,7 +652,8 @@ The codebase uses a **YAML-driven configuration system** with **aggressive LLM o
 |-----------|------|---------|
 | **Tool Definitions** | `src/config/yaml/tools.yaml` | Single source of truth for all tool metadata |
 | **Handler Registry** | `src/tools/registry.ts` | Declarative tool registration + `executeTool` wrapper |
-| **YAML Loader** | `src/config/loader.ts` | Parses YAML, generates MCP-compatible definitions |
+| **YAML Loader** | `src/config/loader.ts` | Parses YAML, generates MCP-compatible definitions (cached) |
+| **Concurrency Utils** | `src/utils/concurrency.ts` | Bounded parallel execution (`pMap`/`pMapSettled`) |
 | **Shared Utils** | `src/tools/utils.ts` | Common utility functions |
 
 **Adding a new tool:**
@@ -661,6 +662,24 @@ The codebase uses a **YAML-driven configuration system** with **aggressive LLM o
 3. Register in `src/tools/registry.ts`
 
 See `docs/refactoring/04-migration-guide.md` for detailed instructions.
+
+### Performance & Stability (v3.5.1+)
+
+All parallel operations use **bounded concurrency** to prevent CPU spikes and API rate limits:
+
+| Operation | Before | After |
+|-----------|--------|-------|
+| Reddit search queries | 50 concurrent | 8 concurrent |
+| Web scraping batches | 30 concurrent | 10 concurrent |
+| Deep research questions | Unbounded | 3 concurrent |
+| Reddit post fetching | 10 concurrent | 5 concurrent |
+| File attachments | Unbounded | 5 concurrent |
+
+Additional optimizations:
+- YAML config cached in memory (no repeated disk reads)
+- Async file I/O (no event loop blocking)
+- Pre-compiled regex patterns for hot paths
+- Reddit auth token deduplication (prevents concurrent token requests)
 
 ### LLM Optimization (v3.5.0+)
 
@@ -671,7 +690,7 @@ All tools include **aggressive guidance** to force LLMs to use them optimally:
 | **Configurable Limits** | All min/max values in YAML (`limits` section) |
 | **BAD vs GOOD Examples** | Every tool shows anti-patterns and perfect usage |
 | **Aggressive Phrasing** | Changed from "you can" to "you MUST" |
-| **Visual Formatting** | Emoji headers (🔥), section dividers (━━━), icons (📊🎯❌✅) |
+| **Visual Formatting** | Emoji headers, section dividers, icons for visual scanning |
 | **Templates** | Structured formats for questions, extractions, file descriptions |
 
 **Key Enhancements:**

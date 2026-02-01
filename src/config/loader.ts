@@ -23,6 +23,9 @@ import type {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Cached YAML config - loaded once, reused for all subsequent calls
+let cachedYamlConfig: YamlConfig | null = null;
+
 // ============================================================================
 // YAML to Zod Schema Conversion
 // ============================================================================
@@ -194,9 +197,11 @@ function zodToMcpInputSchema(schema: z.ZodTypeAny): McpTool['inputSchema'] {
  * Load and parse tools.yaml
  */
 export function loadYamlConfig(): YamlConfig {
+  if (cachedYamlConfig) return cachedYamlConfig;
   const yamlPath = join(__dirname, 'yaml', 'tools.yaml');
   const yamlContent = readFileSync(yamlPath, 'utf8');
-  return parseYaml(yamlContent) as YamlConfig;
+  cachedYamlConfig = parseYaml(yamlContent) as YamlConfig;
+  return cachedYamlConfig;
 }
 
 /**

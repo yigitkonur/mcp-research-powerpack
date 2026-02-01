@@ -12,6 +12,9 @@ import { SCRAPER } from '../config/index.js';
 import { getToolConfig } from '../config/loader.js';
 import { classifyError } from '../utils/errors.js';
 
+// Module-level singleton - MarkdownCleaner is stateless
+const markdownCleaner = new MarkdownCleaner();
+
 // Get extraction suffix from YAML config (fallback to hardcoded if not found)
 function getExtractionSuffix(): string {
   const config = getToolConfig('scrape_links');
@@ -113,7 +116,6 @@ export async function handleScrapeLinks(
     return createErrorResponse(`Failed to initialize scraper: ${err.message}`, Date.now() - startTime);
   }
 
-  const markdownCleaner = new MarkdownCleaner();
   const llmProcessor = createLLMProcessor(); // Returns null if not configured
 
   const enhancedInstruction = params.use_llm

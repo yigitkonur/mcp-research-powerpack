@@ -76,10 +76,11 @@ function aggregateResults(searches: KeywordSearchResult[]): Map<string, Aggregat
         existing.frequency += 1;
         existing.positions.push(result.position);
         existing.queries.push(search.keyword);
+        const prevBest = existing.bestPosition;
         existing.bestPosition = Math.min(existing.bestPosition, result.position);
         existing.totalScore += getCtrWeight(result.position);
-        // Keep best title/snippet (from highest position)
-        if (result.position < existing.positions[0]) {
+        // Keep best title/snippet (from highest ranking position)
+        if (result.position < prevBest) {
           existing.title = result.title;
           existing.snippet = result.snippet;
         }
@@ -400,10 +401,11 @@ function aggregateRedditResults(
         existing.frequency += 1;
         existing.positions.push(position);
         existing.queries.push(query);
+        const prevBest = existing.bestPosition;
         existing.bestPosition = Math.min(existing.bestPosition, position);
         existing.totalScore += getCtrWeight(position);
-        // Keep best title/snippet (from highest position)
-        if (position < existing.positions[0]) {
+        // Keep best title/snippet (from highest ranking position)
+        if (position < prevBest) {
           existing.title = result.title;
           existing.snippet = result.snippet;
           existing.date = result.date;
