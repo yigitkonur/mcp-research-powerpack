@@ -1,3 +1,0 @@
-Failed to call tool nonexistent_tool: MCP error -32601: MCP error -32601: Method not found: nonexistent_tool. Available tools: search_reddit, get_reddit_post, deep_research, scrape_links, web_search
-
-Failed with exit code: 1

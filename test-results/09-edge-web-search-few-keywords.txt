@@ -1,9 +1,0 @@
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "# ❌ Validation Error\n\n- **keywords**: web_search: MINIMUM 3 keywords required. You provided {#}. Add {#} more diverse keywords covering different perspectives."
-    }
-  ],
-  "isError": true
-}

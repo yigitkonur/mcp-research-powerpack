@@ -1,8 +1,0 @@
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "# Reddit Posts (2 posts)\n\n**Comments:** Not fetched (fetch_comments=false)\n**Status:** 📦 1 batch(es) processed\n\n---\n\n## What are your favorite TypeScript features or tips you think every developer should know?\n\n**r/typescript** • u/P-TownHero • ⬆️ 86 • 💬 58 comments\n🔗 https://reddit.com/r/typescript/comments/1640uml/what_are_your_favorite_typescript_features_or/\n\n### Post Content\n\nRight now I'm exclusively using TypeScript only to infer types, and to give type definitions via interfaces when TS starts to cry. What are some some features or things that I'm missing out on?\n\n_Comments not fetched (fetch_comments=false)_\n\n\n\n---\n\n## Best Practices in Node\n\n**r/node** • u/lotion_potion16 • ⬆️ 25 • 💬 30 comments\n🔗 https://reddit.com/r/node/comments/1m2d5aa/best_practices_in_node/\n\n### Post Content\n\nHi Everyone. I started learning node like last week. I am at a point where I can write the code. But I dont want to just write working code, i want to write good code. So what are some best practices in node? \n\n_Comments not fetched (fetch_comments=false)_\n\n\n\n---\n\n**Summary:** ✅ 2 successful | ❌ 0 failed"
-    }
-  ]
-}

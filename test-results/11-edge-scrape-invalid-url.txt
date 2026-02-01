@@ -1,9 +1,0 @@
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "# Scraped Content (2 URLs)\n\n**Token Allocation:** 16,000 tokens/URL (2 URLs, 32,000 total budget)\n**Status:** ✅ 1 successful | ❌ 1 failed | 📦 1 batch(es)\n\n---\n\n## https://thisdoesnotexist12345678.com\n\n❌ Failed to scrape: Failed after 3 fallback modes: basic mode: Bad gateway; javascript rendering: Bad gateway; javascript + US geo-targeting: Bad gateway\n\n---\n\n## https://example.com\n\nExample Domain\n\n# Example Domain\n\nThis domain is for use in documentation examples without needing permission. Avoid use in operations.\n\n[Learn more](https://iana.org/domains/example)"
-    }
-  ],
-  "isError": false
-}

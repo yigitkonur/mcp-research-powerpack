@@ -1,9 +1,0 @@
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "# ❌ Validation Error\n\n- **queries**: Array must contain at least 10 element(s)"
-    }
-  ],
-  "isError": true
-}

@@ -1,3 +1,0 @@
-Command is required.
-
-Failed with exit code: 1
