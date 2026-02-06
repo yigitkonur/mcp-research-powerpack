@@ -60,7 +60,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (error instanceof McpError) {
       throw error;
     }
-    
+
     // Unexpected error - format as tool error
     const structuredError = classifyError(error);
     console.error(`[MCP Server] Tool "${name}" error:`, {
@@ -87,7 +87,7 @@ let isShuttingDown = false;
 async function gracefulShutdown(exitCode: number): Promise<void> {
   if (isShuttingDown) return;
   isShuttingDown = true;
-  
+
   try {
     await server.close();
     console.error(`[MCP Server] Server closed at ${new Date().toISOString()}`);
@@ -98,22 +98,59 @@ async function gracefulShutdown(exitCode: number): Promise<void> {
   }
 }
 
+/**
+ * Safely extract error information without triggering another exception
+ * Prevents infinite loops when error objects have problematic getters
+ */
+function safeErrorString(error: unknown): string {
+  try {
+    if (error instanceof Error) {
+      // Try to get message and stack safely
+      const message = String(error.message || 'Unknown error');
+      try {
+        const stack = String(error.stack || '');
+        if (!stack) {
+          return message;
+        }
+        // Avoid duplicating the message when the stack already includes it
+        return stack.includes(message) ? stack : `${message}\n${stack}`;
+      } catch {
+        return message; // Stack serialization failed, just return message
+      }
+    }
+    return String(error);
+  } catch {
+    // Even String() can fail on some objects
+    return '[Error: Unable to serialize error object]';
+  }
+}
+
 // Handle uncaught exceptions - MUST EXIT per Node.js docs
 // The VM is in an unstable state after uncaught exception
 process.on('uncaughtException', (error: Error) => {
-  console.error(`[MCP Server] FATAL uncaughtException at ${new Date().toISOString()}:`);
-  console.error(`  Message: ${error.message}`);
-  console.error(`  Stack: ${error.stack}`);
+  try {
+    console.error(`[MCP Server] FATAL uncaughtException at ${new Date().toISOString()}:`);
+    console.error(safeErrorString(error));
+  } catch {
+    // Even logging failed - just exit
+    console.error('[MCP Server] FATAL uncaughtException (unable to log details)');
+  }
   gracefulShutdown(1);
 });
 
 // Handle unhandled promise rejections - MUST EXIT (Node v15+ behavior)
 // Suppressing this risks memory leaks and corrupted state
 process.on('unhandledRejection', (reason: unknown) => {
-  const error = classifyError(reason);
-  console.error(`[MCP Server] FATAL unhandledRejection at ${new Date().toISOString()}:`);
-  console.error(`  Message: ${error.message}`);
-  console.error(`  Code: ${error.code}`);
+  try {
+    const error = classifyError(reason);
+    console.error(`[MCP Server] FATAL unhandledRejection at ${new Date().toISOString()}:`);
+    console.error(`  Message: ${error.message}`);
+    console.error(`  Code: ${error.code}`);
+  } catch {
+    // classifyError or logging failed, use safeErrorString as fallback
+    console.error('[MCP Server] FATAL unhandledRejection (unable to classify error):');
+    console.error(safeErrorString(reason));
+  }
   gracefulShutdown(1);
 });
 
