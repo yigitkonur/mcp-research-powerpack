@@ -109,7 +109,11 @@ function safeErrorString(error: unknown): string {
       const message = String(error.message || 'Unknown error');
       try {
         const stack = String(error.stack || '');
-        return stack ? `${message}\n${stack}` : message;
+        if (!stack) {
+          return message;
+        }
+        // Avoid duplicating the message when the stack already includes it
+        return stack.includes(message) ? stack : `${message}\n${stack}`;
       } catch {
         return message; // Stack serialization failed, just return message
       }
@@ -143,7 +147,9 @@ process.on('unhandledRejection', (reason: unknown) => {
     console.error(`  Message: ${error.message}`);
     console.error(`  Code: ${error.code}`);
   } catch {
-    console.error('[MCP Server] FATAL unhandledRejection (unable to log details)');
+    // classifyError or logging failed, use safeErrorString as fallback
+    console.error('[MCP Server] FATAL unhandledRejection (unable to classify error):');
+    console.error(safeErrorString(reason));
   }
   gracefulShutdown(1);
 });
