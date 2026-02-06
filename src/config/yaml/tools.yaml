@@ -1,668 +1,130 @@
-# Research Powerpack MCP Server - Tool Configuration (ENHANCED)
-# Single source of truth for all tool metadata, descriptions, and parameter schemas
-# Version: 1.0-enhanced
-# Optimization: ~60% token reduction from original, 95%+ instructional context preserved
-
+# Research Powerpack MCP - Tool Configuration
+# Optimized for LLM consumption - <1K tokens total
 version: "1.0"
 
 metadata:
   name: "research-powerpack-mcp"
-  description: "Research tools for AI assistants"
+  description: "Parallel research tools with AI extraction"
 
-# ============================================================================
-# SHARED PRINCIPLES - Apply to ALL tools
-# ============================================================================
+# CORE PRINCIPLES (ALL TOOLS)
 shared:
-  core_philosophy: |
-    These tools are designed for COMPREHENSIVE research through parallel processing.
-    Using minimal inputs wastes the parallel capacity. Always maximize input diversity.
-    
-  principles:
-    diversity: |
-      Maximize input diversity. More items = better coverage = higher quality output.
-      Each input should target a DIFFERENT angle - no overlap, no duplicates.
-      
-    iteration: |
-      ALWAYS use sequentialthinking between tool calls to:
-      - Evaluate what you found
-      - Identify gaps in coverage
-      - Notice new angles from results
-      - Decide whether to iterate or proceed
-      Results are feedback - use them to ask better questions!
-      
-    parallel: |
-      All items process in parallel - no time penalty for more items.
-      Use the maximum recommended count for comprehensive coverage.
-      
-  workflow_pattern: |
-    MANDATORY for all research:
-    1. THINK FIRST → Plan your query/question strategy
-    2. EXECUTE TOOL → Run with diverse inputs  
-    3. THINK AFTER → Evaluate results, identify gaps
-    4. ITERATE OR PROCEED → Refine and repeat if needed, or move to next tool
-    5. SYNTHESIZE → Combine insights into final output
-    
-    Why this works: Initial queries often miss important perspectives.
-    Each iteration reveals what you SHOULD have asked!
-    
-  scope_expansion_triggers: |
-    Iterate when:
-    - Results mention concepts you didn't research
-    - Answers raise new questions you should explore
-    - You realize initial scope was too narrow
-    - You discover related topics that matter
-    - You need deeper understanding of a specific aspect
-    
-    Key Insight: First research reveals what you SHOULD have asked!
+  philosophy: "MAXIMIZE inputs for parallel processing - NO time penalty for more items! More diverse inputs = better coverage = higher quality. Each input MUST target DIFFERENT angle - NO overlap/duplicates. ALWAYS use sequentialthinking between tool calls."
 
-# ============================================================================
-# TOOLS
-# ============================================================================
+  workflow: |
+    MANDATORY: THINK first (plan strategy) → EXECUTE with MAX diversity (use recommended counts) → THINK after (evaluate: what's missing? new angles discovered? gaps in coverage?) → ITERATE if needed (refine based on findings) → SYNTHESIZE final output.
+    KEY INSIGHT: First research pass usually incomplete - reveals what you SHOULD have asked! Results are feedback - use them to ask better questions next iteration.
+
+  iteration_triggers: "Iterate when: Results mention concepts you didn't research | Answers raise NEW questions | Initial scope too narrow | Related topics discovered you should explore"
+
 tools:
-  # --------------------------------------------------------------------------
-  # REDDIT TOOLS
-  # --------------------------------------------------------------------------
   - name: search_reddit
     category: reddit
     capability: search
-    limits:
-      min_queries: 10
-      max_queries: 50
-      recommended_queries: 20
-    
+    limits: {min_queries: 10, max_queries: 50, recommended: 20}
+
     description: |
-      **🔥 REDDIT SEARCH - MINIMUM 10 QUERIES, RECOMMENDED 20+**
-      
-      This tool is designed for consensus analysis through MULTIPLE diverse queries.
-      Using 1-3 queries = wasting the tool's power. You MUST use 10+ queries minimum.
-      
-      **Budget:** 10 results per query, all run in parallel.
-      - 10 queries = 100 results
-      - 20 queries = 200 results (RECOMMENDED)
-      - 50 queries = 500 results (comprehensive)
-      
-      **10-Category Query Formula** - Each query targets a DIFFERENT angle. NO OVERLAP!
-      
-      1. **Direct topic:** "[topic] [platform]"
-         Example: "YouTube Music Mac app"
-      2. **Recommendations:** "best/recommended [topic]"
-         Example: "best YouTube Music client Mac"
-      3. **Specific tools:** Project names, GitHub repos
-         Example: "YTMDesktop", "th-ch youtube-music"
-      4. **Comparisons:** "[A] vs [B]"
-         Example: "YouTube Music vs Spotify Mac desktop"
-      5. **Alternatives:** "[topic] alternative/replacement"
-         Example: "YouTube Music Mac alternative"
-      6. **Subreddits:** "r/[subreddit] [topic]" - different communities have different perspectives
-         Example: "r/macapps YouTube Music", "r/opensource YouTube Music"
-      7. **Problems/Issues:** "[topic] issues/crashes/problems"
-         Example: "YouTube Music Mac crashes", "YTM desktop performance problems"
-      8. **Year-specific:** Add "2024" or "2025" for recent discussions
-         Example: "best YouTube Music Mac 2024"
-      9. **Features:** "[topic] [specific feature]"
-         Example: "YouTube Music offline Mac", "YTM lyrics desktop"
-      10. **Developer/GitHub:** "[topic] GitHub/open source/electron"
-          Example: "youtube-music electron GitHub", "YTM desktop open source"
-      
-      **Search Operators:**
-      - `intitle:` - Search in post titles only
-      - `"exact phrase"` - Match exact phrase
-      - `OR` - Match either term
-      - `-exclude` - Exclude term
-      - All queries auto-add `site:reddit.com`
-      
-      **Example showing all 10 categories:**
-      ❌ BAD: `{"queries": ["best YouTube Music app"]}` → 1 vague query, misses 90% of consensus
-      ✅ GOOD: `{"queries": ["YouTube Music Mac app", "best YTM client Mac", "YTMDesktop Mac", "YouTube Music vs Spotify Mac", "YouTube Music Mac alternative", "r/macapps YouTube Music", "YTM Mac crashes", "YouTube Music Mac 2024", "YTM offline Mac", "youtube-music GitHub", ...expand to 20 queries]}` → comprehensive multi-angle coverage
-      
-      **Pro Tips:**
-      1. **Use ALL 10 categories** - Each reveals different community perspectives
-      2. **Target specific subreddits** - Different communities have different expertise
-      3. **Include year numbers** - "2024", "2025" filters for recent discussions
-      4. **Add comparison keywords** - "vs", "versus" find decision threads
-      5. **Include problem keywords** - "issue", "bug", "crash" find real experiences
-      6. **Vary phrasing** - "best", "top", "recommended" capture different discussions
-      7. **Use technical terms** - "electron", "GitHub", "API" find developer perspectives
-      8. **NO DUPLICATES** - Each query must target a unique angle
-      
-      **Workflow:**
-      search_reddit → sequentialthinking (evaluate results) → get_reddit_post OR search again → sequentialthinking → synthesize
-      
-      **REMEMBER:** More queries = better consensus detection = higher quality results!
+      MIN 10 queries, REC 20+ (10q=100 results, 20q=200 results). Each query MUST target DIFFERENT angle - NO overlap! 10 categories: 1) direct topic 2) recommendations (best/top) 3) specific tools/repos/names 4) comparisons (vs) 5) alternatives 6) subreddit targeting (r/macapps, r/opensource) 7) problems/issues/crashes 8) year-specific (2024/2025) 9) features 10) dev/GitHub/electron. Operators: intitle:, "exact", OR, -exclude. Using 1-3 queries wastes parallel power. Auto adds site:reddit.com.
 
     parameters:
       queries:
         type: array
         required: true
-        items:
-          type: string
-        validation:
-          minItems: 10
-          maxItems: 50
-        description: |
-          **10-50 diverse queries** (Minimum 10 required, 20-30 recommended)
-          
-          Each query MUST target a different angle using the 10-category formula.
-          No duplicates, no overlap - maximize diversity for comprehensive consensus.
-          
-          **Quick Checklist:**
-          ✓ Direct topic queries
-          ✓ Recommendation queries ("best", "recommended")
-          ✓ Specific tool/project names
-          ✓ Comparisons ("vs", "versus")
-          ✓ Subreddit targeting ("r/...")
-          ✓ Year-specific (2024, 2025)
-          ✓ Problem keywords (issue, bug, crash)
-          ✓ Feature keywords
-          ✓ Developer angle (GitHub, open source)
-
+        items: {type: string}
+        validation: {minItems: 10, maxItems: 50}
+        description: "10-50 diverse queries. Each targets different angle: direct|best|tools|vs|alternative|r/sub|issues|2024|features|GitHub. NO overlap."
       date_after:
         type: string
         required: false
-        description: "Filter results after date (YYYY-MM-DD). Example: '2024-01-01'"
+        description: "Filter after date (YYYY-MM-DD)"
 
-  # --------------------------------------------------------------------------
+
   - name: get_reddit_post
     category: reddit
     capability: reddit
-    limits:
-      min_urls: 2
-      max_urls: 50
-      recommended_urls: 20
-      default_max_comments: 1000
-      extraction_suffix: |
-        ---
-        
-        ⚠️ IMPORTANT: Extract and synthesize the key insights from these Reddit discussions. Focus on:
-        - Common themes and community consensus
-        - Specific recommendations with reasoning
-        - Contrasting viewpoints and debates
-        - Real-world experiences and lessons learned
-        - Technical details and implementation tips
-        
-        Be comprehensive but concise. Prioritize actionable insights over noise.
-        
-        ---
-    
+    limits: {min_urls: 2, max_urls: 50, recommended: 20, default_max_comments: 1000}
+    extraction_suffix: "Extract key insights: consensus, recommendations with reasoning, contrasting views, real experiences, technical details. Be comprehensive + concise, prioritize actionable info."
+
     description: |
-      **🔥 FETCH REDDIT POSTS - 2-50 URLs, RECOMMENDED 10-20+**
-      
-      This tool fetches Reddit posts with smart comment allocation.
-      Using 2-5 posts = missing community consensus. Use 10-20+ for broad perspective.
-      
-      **Comment Budget:** 1,000 total comments distributed automatically across posts.
-      - 2 posts: ~500 comments/post (deep dive)
-      - 10 posts: ~100 comments/post (balanced)
-      - 20 posts: ~50 comments/post (RECOMMENDED: broad)
-      - 50 posts: ~20 comments/post (max coverage)
-      
-      Comment allocation is AUTOMATIC - you don't need to calculate!
-      
-      **When to use different post counts:**
-      
-      **2-5 posts:** Deep dive on specific discussions
-      - Use when: You found THE perfect thread and want all comments
-      - Trade-off: Deep but narrow perspective
-      
-      **10-15 posts:** Balanced depth + breadth (GOOD)
-      - Use when: Want good comment depth across multiple discussions
-      - Trade-off: Good balance of depth and coverage
-      
-      **20-30 posts:** Broad community perspective (RECOMMENDED)
-      - Use when: Want to see consensus across many discussions
-      - Trade-off: Less comments per post but more diverse opinions
-      
-      **40-50 posts:** Maximum coverage
-      - Use when: Researching controversial topic, need all perspectives
-      - Trade-off: Fewer comments per post but comprehensive coverage
-      
-      **Example:**
-      ❌ BAD: `{"urls": ["single_url"]}` → 1 perspective, could be biased/outdated
-      ✅ GOOD: `{"urls": [20 URLs from diverse subreddits: programming, webdev, node, golang, devops, etc.]}` → comprehensive community perspective
-      
-      **Pro Tips:**
-      1. **Use 10-20+ posts** - More posts = broader community perspective
-      2. **Mix subreddits** - Different communities have different expertise and perspectives
-      3. **Include various discussion types** - Best practices, comparisons, problems, solutions
-      4. **Let comment allocation auto-adjust** - Don't override max_comments unless needed
-      5. **Use after search_reddit** - Get URLs from search, then fetch full content here
-      
-      **CRITICAL:** Comments often contain the BEST insights, solutions, and real-world experiences.
-      Always set fetch_comments=true unless you only need post titles.
-      
-      **Workflow:** search_reddit (find posts) → get_reddit_post (fetch full content + comments)
+      MIN 2 URLs, REC 10-20+. Auto comment budget: 1000 total (2 posts=500 each deep, 10=100 balanced, 20=50 broad coverage). Comments have BEST insights - always fetch_comments=true unless only need titles. use_llm=true for AI extraction (pennies, needs OPENROUTER_API_KEY) - synthesizes consensus, filters noise. Mix subreddits for diverse perspectives. Using 2-5 posts = narrow, missing consensus. 20-30 posts = comprehensive.
 
     parameters:
       urls:
         type: array
         required: true
-        items:
-          type: string
-        validation:
-          minItems: 2
-          maxItems: 50
-        description: |
-          **2-50 Reddit post URLs** (Minimum 2, recommended 10-20)
-          
-          More posts = broader community perspective and better consensus detection.
-          Get URLs from search_reddit results, then fetch full content here.
-
+        items: {type: string}
+        validation: {minItems: 2, maxItems: 50}
+        description: "2-50 Reddit URLs. More = broader consensus. Get from search_reddit."
       fetch_comments:
         type: boolean
         required: false
         default: true
-        description: |
-          **Fetch comments from posts (RECOMMENDED: true)**
-          
-          Comments often contain the BEST insights, solutions, and real-world experiences.
-          Set to true (default): Get post + comments
-          Set to false: Get post content only (faster but misses insights)
-
+        description: "Fetch comments (true recommended - best insights in comments)"
       max_comments:
         type: number
         required: false
         default: 100
-        description: |
-          **Override automatic comment allocation**
-          
-          Leave empty for smart allocation based on post count:
-          - 2 posts: ~500 comments/post
-          - 10 posts: ~100 comments/post
-          - 20 posts: ~50 comments/post
-          
-          Only override if you need specific comment depth.
-
+        description: "Override auto allocation. Leave empty for smart allocation."
       use_llm:
         type: boolean
         required: false
         default: false
-        description: |
-          **Enable AI-powered content extraction (RECOMMENDED: true)**
-          
-          When enabled, processes Reddit content through LLM to:
-          - Extract key insights and community consensus
-          - Synthesize opinions across multiple posts
-          - Identify common recommendations and debates
-          - Filter noise and surface actionable information
-          
-          Cost: pennies (~$0.01 per batch)
-          Requires: OPENROUTER_API_KEY environment variable
-
+        description: "AI extraction (recommended). Extracts insights, consensus, filters noise. Needs OPENROUTER_API_KEY."
       what_to_extract:
         type: string
         required: false
-        description: |
-          **Extraction instructions for AI (used when use_llm=true)**
-          
-          Tell the AI what specific information to extract:
-          - "Extract recommendations for [topic] with pros/cons"
-          - "Summarize common issues and solutions mentioned"
-          - "Identify consensus on [specific question]"
-          
-          If not provided, defaults to general insight extraction.
-          More specific instructions = better extraction quality!
+        description: "Extraction instructions for AI. Be specific: 'Extract recommendations for X with pros/cons'. More specific = better quality."
 
-  # --------------------------------------------------------------------------
-  # DEEP RESEARCH TOOL
-  # --------------------------------------------------------------------------
+
   - name: deep_research
     category: research
     capability: deepResearch
     useZodSchema: true
     zodSchemaRef: "deepResearchParamsSchema"
-    limits:
-      min_questions: 1
-      max_questions: 10
-      recommended_questions: 5
-      min_question_length: 200
-      min_specific_questions: 2
-    
+    limits: {min_questions: 1, max_questions: 10, recommended: 5, min_length: 200, min_specific: 2}
+
     description: |
-      **🔥 DEEP RESEARCH - 2-10 QUESTIONS, RECOMMENDED 5+**
-      
-      This tool runs 2-10 questions IN PARALLEL with AI-powered research.
-      Using 1-2 questions = wasting the parallel research capability!
-      
-      **Token Budget:** 32,000 tokens distributed across questions.
-      - 2 questions: 16,000 tokens each (deep dive)
-      - 5 questions: 6,400 tokens each (RECOMMENDED: balanced)
-      - 10 questions: 3,200 tokens each (comprehensive multi-topic)
-      
-      All questions research in PARALLEL - no time penalty for more questions!
-      
-      **When to use this tool:**
-      - Multi-perspective analysis on related topics
-      - Researching a domain from multiple angles
-      - Validating understanding across different aspects
-      - Comparing approaches/technologies side-by-side
-      - Deep technical questions requiring comprehensive research
-      
-      **Question Template** - Each question MUST include these sections:
-      
-      1. **🎯 WHAT I NEED:** Clearly state what you're trying to achieve or understand
-      2. **🤔 WHY I'M RESEARCHING:** What decision does this inform? What problem are you solving?
-      3. **📚 WHAT I ALREADY KNOW:** Share current understanding so research fills gaps, not repeats basics
-      4. **🔧 HOW I'LL USE THIS:** Practical application - implementation, debugging, architecture
-      5. **❓ SPECIFIC QUESTIONS (2-5):** Break down into specific, pointed sub-questions
-      6. **🌐 PRIORITY SOURCES:** (optional) Preferred docs/sites to prioritize
-      7. **⚡ FOCUS AREAS:** (optional) What matters most - performance, security, etc.
-      
-      **ATTACH FILES when asking about code - THIS IS MANDATORY:**
-      - 🐛 Bugs/errors → Attach the failing code
-      - ⚡ Performance issues → Attach the slow code paths
-      - ♻️ Refactoring → Attach current implementation
-      - 🔍 Code review → Attach code to review
-      - 🏗️ Architecture → Attach relevant modules
-      
-      Research without code context for code questions is generic and unhelpful!
-      
-      **Example:**
-      ❌ BAD: `{"questions": [{"question": "Research React hooks"}]}` → 1 vague question, no template, no context, wastes 90% capacity
-      
-      ✅ GOOD: 
-      ```json
-      {"questions": [{
-        "question": "🎯 WHAT I NEED: Understand when to use useCallback vs useMemo in React 18\n\n🤔 WHY: Optimizing a data-heavy dashboard with 50+ components, seeing performance issues\n\n📚 WHAT I KNOW: Both memoize values, useCallback for functions, useMemo for computed values. Unclear when each actually prevents re-renders.\n\n🔧 HOW I'LL USE THIS: Refactor Dashboard.tsx to eliminate unnecessary re-renders\n\n❓ SPECIFIC QUESTIONS:\n1. When does useCallback actually prevent re-renders vs when it doesn't?\n2. Performance benchmarks: useCallback vs useMemo vs neither in React 18?\n3. Common anti-patterns that negate their benefits?\n4. How to measure if they're actually helping?\n\n🌐 PRIORITY: Official React docs, React team blog posts\n⚡ FOCUS: Patterns for frequently updating state"
-      }, ...add 4 more questions for comprehensive coverage]}
-      ```
-      
-      **Pro Tips:**
-      1. **Use 5-10 questions** - Maximize parallel research capacity
-      2. **Follow the template** - Include all 7 sections for each question
-      3. **Be specific** - Include version numbers, error codes, library names
-      4. **Add 2-5 sub-questions** - Break down what you need to know
-      5. **Attach files for code questions** - MANDATORY for bugs/performance/refactoring
-      6. **Describe files thoroughly** - Explain what the file is and what to focus on
-      7. **Specify focus areas** - "Focus on X, Y, Z" for prioritization
-      8. **Group related questions** - Research a domain from multiple angles
-      
-      **Scope Expansion Triggers** - Iterate when:
-      - Results mention concepts you didn't research
-      - Answers raise new questions you should explore
-      - You realize initial scope was too narrow
-      - You discover related topics that matter
-      
-      **Workflow:**
-      deep_research (3-5 questions) → sequentialthinking (evaluate, identify gaps) → 
-      OPTIONAL: deep_research AGAIN with NEW questions based on learnings → 
-      sequentialthinking (synthesize) → final decision
-      
-      **REMEMBER:**
-      - ALWAYS think after getting results (digest and identify gaps!)
-      - DON'T assume first research is complete (iterate based on findings!)
-      - USE learnings to ask better questions (results = feedback!)
-      - EXPAND scope when results reveal new important areas!
+      MIN 2, REC 5-10 questions parallel. 32K tokens distributed (2q=16K/each deep, 5q=6.4K balanced, 10q=3.2K comprehensive). MANDATORY template per question:
+      "🎯 WHAT I NEED: [clear goal]
+      🤔 WHY: [decision/problem]
+      📚 WHAT I KNOW: [current understanding - so research fills gaps not basics]
+      🔧 HOW I'LL USE: [implementation/debugging/architecture]
+      ❓ SPECIFIC QUESTIONS: 1) [q1] 2) [q2] 3) [q3]
+      🌐 PRIORITY SOURCES: [optional - docs/sites]
+      ⚡ FOCUS: [optional - performance/security]"
+      ATTACH FILES for code Qs (bugs/perf/refactor/review/architecture) - MANDATORY or research is generic/unhelpful. Using 1-2 Qs wastes parallel capacity. First pass incomplete - iterate based on findings.
 
     schemaDescriptions:
-      questions: |
-        **2-10 structured questions following the template**
-        
-        Each question should cover a different angle of your research topic.
-        Attach files for any code-related questions - this is mandatory!
-        
-      file_attachments: |
-        **MANDATORY for code questions: bugs, performance, refactoring, code review, architecture**
-        
-        Format: {path: "/absolute/path", description: "What this file is, why relevant, what to focus on", start_line?, end_line?}
-        
-        Use absolute paths. Include thorough description explaining the file's relevance,
-        focus areas, and known issues.
+      questions: "2-10 structured questions following template above. Each MUST cover different angle of topic. Attach files for ANY code-related Q (bugs/errors/perf/refactoring/review/architecture) - without code context, research is generic/useless."
+      file_attachments: "MANDATORY for code Qs: bugs→failing code, perf→slow code, refactor→current implementation, review→code to review, architecture→relevant modules. Format: {path: '/absolute/path', description: 'What file is, why relevant, focus areas, known issues', start_line?, end_line?}. Thorough description critical."
 
-  # --------------------------------------------------------------------------
-  # SCRAPE LINKS TOOL
-  # --------------------------------------------------------------------------
+
   - name: scrape_links
     category: scrape
     capability: scraping
     useZodSchema: true
     zodSchemaRef: "scrapeLinksParamsSchema"
-    limits:
-      min_urls: 1
-      max_urls: 50
-      recommended_urls: 5
-      min_extraction_prompt_length: 50
-      min_extraction_targets: 3
-      extraction_suffix: |
-        ---
-        
-        ⚠️ IMPORTANT RULE: You MUST answer this extraction request as comprehensive as possible while keeping info density super high without adding unnecessary words (no verbosity, but extreme comprehensiveness) but satisfy the scope defined by previous instructions even more (never hallucinate or made-up anything). Try to extract every single detail possible mentioned on top of message by deeply understanding page context but NEVER MADE UP up anything and only rely on given context shown above.
+    limits: {min_urls: 1, max_urls: 50, recommended: 5, min_extract_len: 50, min_targets: 3}
+    extraction_suffix: "MUST: Comprehensive extraction, high info density, no verbosity, satisfy scope, NEVER hallucinate, only extract grounded info from document. No confirmation messages."
 
-        ---
-        
-        Now it's time to extract the information you need. don't use any confirmation messages or anything unrelated to the extraction. only extract information thats grounded in the given document
-    
     description: |
-      **🔥 WEB SCRAPING - 1-50 URLs, RECOMMENDED 3-5. ALWAYS use_llm=true**
-      
-      This tool has TWO modes:
-      1. **Basic scraping** (use_llm=false) - Gets raw HTML/text - messy, requires manual parsing
-      2. **AI-powered extraction** (use_llm=true) - Intelligently extracts what you need ⭐ **USE THIS!**
-      
-      **⚡ ALWAYS SET use_llm=true FOR INTELLIGENT EXTRACTION ⚡**
-      
-      **Why use AI extraction (use_llm=true):**
-      - Filters out navigation, ads, footers automatically
-      - Extracts ONLY what you specify in what_to_extract
-      - Handles complex page structures intelligently
-      - Returns clean, structured content ready to use
-      - Saves hours of manual HTML parsing
-      - Cost: pennies (~$0.01 per 10 pages)
-      
-      **Token Budget:** 32,000 tokens distributed across URLs.
-      - 3 URLs: ~10,666 tokens each (deep extraction)
-      - 5 URLs: ~6,400 tokens each (RECOMMENDED: balanced)
-      - 10 URLs: ~3,200 tokens each (detailed)
-      - 50 URLs: ~640 tokens each (quick scan)
-      
-      **Extraction Prompt Formula:**
-      ```
-      Extract [target1] | [target2] | [target3] | [target4] | [target5]
-      with focus on [aspect1], [aspect2], [aspect3]
-      ```
-      
-      **Extraction Rules:**
-      - Use pipe `|` to separate extraction targets
-      - Minimum 3 targets required
-      - Be SPECIFIC about what you want ("pricing tiers" not "pricing")
-      - Include "with focus on" to prioritize certain aspects
-      - More targets = more comprehensive extraction
-      - Aim for 5-10 extraction targets
-      
-      **Extraction Templates by Domain:**
-      
-      **Product Research:**
-      ```
-      Extract pricing details | feature comparisons | user reviews | technical specifications | 
-      integration options | support channels | deployment models | security features 
-      with focus on enterprise capabilities, pricing transparency, and integration complexity
-      ```
-      
-      **Technical Documentation:**
-      ```
-      Extract API endpoints | authentication methods | rate limits | error codes | 
-      request examples | response schemas | SDK availability | webhook support 
-      with focus on authentication flow, rate limiting policies, and error handling patterns
-      ```
-      
-      **Competitive Analysis:**
-      ```
-      Extract product features | pricing models | target customers | unique selling points | 
-      technology stack | customer testimonials | case studies | market positioning 
-      with focus on differentiators, pricing strategy, and customer satisfaction
-      ```
-      
-      **Example:**
-      ❌ BAD: `{"urls": ["url"], "use_llm": false, "what_to_extract": "get pricing"}` → raw HTML, vague prompt, 1 target, no focus areas
-      
-      ✅ GOOD: `{"urls": [5 URLs], "use_llm": true, "what_to_extract": "Extract pricing tiers | plan features | API rate limits | enterprise options | integration capabilities | user testimonials with focus on enterprise features, API limitations, and real-world performance data"}` → clean structured extraction
-      
-      **Pro Tips:**
-      1. **ALWAYS use use_llm=true** - The AI extraction is the tool's superpower
-      2. **Use 3-10 URLs** - Balance between depth and breadth
-      3. **Specify 5-10 extraction targets** - More targets = more comprehensive
-      4. **Use pipe `|` separators** - Clearly separate each target
-      5. **Add focus areas** - "with focus on X, Y, Z" for prioritization
-      6. **Be specific** - "pricing tiers" not "pricing", "API rate limits" not "API info"
-      7. **Cover multiple aspects** - Features, pricing, technical, social proof
-      
-      **Automatic Fallback:** Basic → JavaScript rendering → JavaScript + US geo-targeting
-      **Batching:** Max 30 concurrent requests (50 URLs = [30] then [20] batches)
-      
-      **REMEMBER:** AI extraction costs pennies but saves hours of manual parsing!
+      REC 3-5 URLs. ALWAYS use_llm=true - AI extraction is this tool's superpower! use_llm=false gives raw HTML (messy, hours manual parsing). use_llm=true: auto-filters nav/ads/footers, extracts ONLY what you specify, handles complex structures, returns clean ready-to-use content, costs pennies (~$0.01/10 pages) vs hours work. 32K tokens (3=10K each, 5=6K, 10=3K, 50=640). Formula: "Extract [t1] | [t2] | [t3] | [t4] | [t5] with focus on [a1], [a2], [a3]". Min 3 targets with | separator, be specific (pricing tiers not pricing), aim 5-10 targets. Templates: Product (pricing|features|reviews|specs|integrations|support), Tech Docs (endpoints|auth|limits|errors|examples|schemas), Competitive (features|pricing|customers|USPs|stack|testimonials).
 
     schemaDescriptions:
-      urls: |
-        **1-50 URLs to scrape** (3-5 recommended for balanced depth/breadth)
-        
-        More URLs = broader coverage but fewer tokens per URL.
-        - 3 URLs: ~10K tokens each (deep)
-        - 5 URLs: ~6K tokens each (balanced)
-        - 10 URLs: ~3K tokens each (detailed)
-        
-      timeout: "Timeout per URL (5-120 seconds, default: 30)"
-      
-      use_llm: |
-        **⚡ ALWAYS SET TO true FOR INTELLIGENT EXTRACTION ⚡**
-        
-        Enables AI-powered content extraction that:
-        - Filters out navigation, ads, footers automatically
-        - Extracts ONLY what you specify in what_to_extract
-        - Handles complex page structures intelligently
-        - Returns clean, structured content
-        
-        Cost: pennies (~$0.001 per page)
-        Default: false (but you should ALWAYS set it to true!)
-        
-      what_to_extract: |
-        **Extraction prompt for AI (REQUIRED when use_llm=true)**
-        
-        Formula: Extract [target1] | [target2] | [target3] with focus on [aspect1], [aspect2] (BE SUPER VERBOSE AND DETAILED + OPTIMIZED LIKE LLM INSTRUCTIONS TO EXTRACT INFO)
-        
-        Requirements:
-        - Minimum 50 characters (be detailed!)
-        - Minimum 3 extraction targets separated by `|`
-        - Include "with focus on" for prioritization
-        - Be SPECIFIC about what you want
-        
-        More specific targets = better extraction quality!
+      urls: "1-50 URLs (3-5 recommended). More URLs = broader coverage, fewer tokens/URL."
+      timeout: "Timeout per URL (5-120s, default 30)"
+      use_llm: "ALWAYS SET TRUE (default false but override it). AI extraction is tool's superpower - auto-filters nav/ads/footers, extracts ONLY your specified targets, returns clean structured content ready to use. Raw HTML (use_llm=false) is messy noise requiring hours parsing. Cost: ~$0.001/page (pennies). Needs OPENROUTER_API_KEY."
+      what_to_extract: "REQUIRED when use_llm=true. Formula: 'Extract [target1] | [target2] | [target3] | [target4] | [target5] with focus on [aspect1], [aspect2], [aspect3]'. Min 50 chars, min 3 targets with | separator. Be super specific (pricing tiers not pricing, API rate limits not API info). Aim 5-10 targets. Act like detailed LLM instruction. More specific targets = higher extraction quality. Include 'with focus on' to prioritize aspects."
 
-  # --------------------------------------------------------------------------
-  # WEB SEARCH TOOL
-  # --------------------------------------------------------------------------
+
   - name: web_search
     category: search
     capability: search
     useZodSchema: true
     zodSchemaRef: "webSearchParamsSchema"
-    limits:
-      min_keywords: 3
-      max_keywords: 100
-      recommended_keywords: 7
-    
+    limits: {min_keywords: 3, max_keywords: 100, recommended: 7}
+
     description: |
-      **🔥 WEB SEARCH - MINIMUM 3 KEYWORDS, RECOMMENDED 5-7**
-      
-      This tool searches up to 100 keywords IN PARALLEL via Google.
-      Using 1-2 keywords = wasting the tool's parallel search power!
-      
-      **Results Budget:** 10 results per keyword, all searches run in parallel.
-      - 3 keywords = 30 results (minimum)
-      - 7 keywords = 70 results (RECOMMENDED)
-      - 100 keywords = 1000 results (comprehensive)
-      
-      **7-Perspective Keyword Formula** - Each keyword targets a DIFFERENT angle:
-      
-      1. **Direct/Broad:** "[topic]"
-         Example: "React state management"
-      2. **Specific/Technical:** "[topic] [technical term]"
-         Example: "React useReducer vs Redux"
-      3. **Problem-Focused:** "[topic] issues/debugging/problems"
-         Example: "React state management performance issues"
-      4. **Best Practices:** "[topic] best practices [year]"
-         Example: "React state management best practices 2024"
-      5. **Comparison:** "[A] vs [B]"
-         Example: "React state management libraries comparison"
-      6. **Tutorial/Guide:** "[topic] tutorial/guide"
-         Example: "React state management tutorial"
-      7. **Advanced:** "[topic] patterns/architecture large applications"
-         Example: "React state management patterns large applications"
-      
-      **Search Operators with Examples:**
-      - `site:domain.com` - Search within specific site
-        Example: `"React hooks" site:github.com` → React hooks repos on GitHub
-      - `"exact phrase"` - Match exact phrase
-        Example: `"Docker OOM" site:stackoverflow.com` → exact error discussions
-      - `-exclude` - Exclude term from results
-        Example: `React state management -Redux` → find alternatives to Redux
-      - `filetype:pdf` - Find specific file types
-        Example: `React tutorial filetype:pdf` → downloadable guides
-      - `OR` - Match either term
-        Example: `React OR Vue state management` → compare frameworks
-      
-      **Keyword Patterns by Use Case:**
-      
-      **Technology Research:**
-      `["PostgreSQL vs MySQL performance 2024", "PostgreSQL best practices production", "\"PostgreSQL\" site:github.com stars:>1000", "PostgreSQL connection pooling", "PostgreSQL vs MongoDB use cases"]`
-      
-      **Problem Solving:**
-      `["Docker container memory leak debugging", "Docker memory limit not working", "\"Docker OOM\" site:stackoverflow.com", "Docker memory optimization best practices"]`
-      
-      **Comparison Research:**
-      `["Next.js vs Remix performance", "Next.js 14 vs Remix 2024", "\"Next.js\" OR \"Remix\" benchmarks", "Next.js vs Remix developer experience"]`
-      
-      **Example:**
-      ❌ BAD: `{"keywords": ["React"]}` → 1 vague keyword, no operators, no diversity
-      
-      ✅ GOOD: `{"keywords": ["React state management best practices", "React useReducer vs Redux 2024", "React Context API performance", "Zustand React state library", "\"React state\" site:github.com", "React state management large applications", "React global state alternatives -Redux"]}` → 7 diverse angles with operators
-      
-      **Pro Tips:**
-      1. **Use 5-7 keywords minimum** - Each reveals different perspective
-      2. **Add year numbers** - "2024", "2025" for recent content
-      3. **Use search operators** - site:, "exact", -exclude, filetype:
-      4. **Vary specificity** - Mix broad + specific keywords
-      5. **Include comparisons** - "vs", "versus", "compared to", "OR"
-      6. **Target sources** - site:github.com, site:stackoverflow.com
-      7. **Add context** - "best practices", "tutorial", "production", "performance"
-      8. **Think parallel** - Each keyword searches independently
-      
-      **Workflow:**
-      web_search → sequentialthinking (evaluate which URLs look promising) → 
-      scrape_links (MUST scrape promising URLs - that's where real content is!) → 
-      sequentialthinking (evaluate scraped content) → 
-      OPTIONAL: web_search again if gaps found → synthesize
-      
-      **Why this workflow works:**
-      - Search results reveal new keywords you didn't think of
-      - Scraped content shows what's actually useful vs what looked good
-      - Thinking between tool calls prevents tunnel vision
-      - Iterative refinement = comprehensive coverage
-      
-      **CRITICAL:**
-      - ALWAYS scrape after web_search - that's where the real content is!
-      - ALWAYS think between tool calls - evaluate and refine!
-      - DON'T stop after one search - iterate based on learnings!
-      
-      **FOLLOW-UP:** Use `scrape_links` to extract full content from promising URLs!
+      MIN 3, REC 5-7 keywords parallel Google search. 10 results/keyword (3=30 results, 7=70, 100=1000). Each keyword = separate search - MUST be diverse angles! 7 perspectives: 1) broad [topic] 2) specific/technical [topic]+[term] 3) problems [topic] issues/debugging 4) best practices [topic] 2024/2025 5) comparison [A] vs [B] OR 6) tutorial/guide 7) advanced patterns/architecture. Operators: site:domain.com (target GitHub/StackOverflow/docs), "exact phrase", -exclude, filetype:pdf, OR. Examples: "PostgreSQL" site:github.com stars:>1000, "Docker OOM" site:stackoverflow.com. CRITICAL: Search only gives URLs - MUST follow with scrape_links to get actual content! Workflow: search → think → scrape_links (MANDATORY) → think → iterate → synthesize. Using 1-2 keywords wastes parallel power.
 
     schemaDescriptions:
-      keywords: |
-        **3-100 diverse keywords** (Minimum 3 required, 5-7 recommended)
-        
-        Each keyword runs as a separate Google search in parallel.
-        Each keyword should target a different angle using the 7-perspective formula.
-        
-        **Diversity Checklist:**
-        ✓ Includes broad keyword
-        ✓ Includes specific/technical keyword
-        ✓ Includes comparison keyword (vs, OR)
-        ✓ Includes best practices keyword
-        ✓ Includes year-specific keyword (2024, 2025)
-        ✓ Uses search operators (site:, "exact", -exclude)
-        ✓ Targets specific sources (GitHub, Stack Overflow, docs)
-        
-        **Search Operators:**
-        - `site:domain.com` - Search within site
-        - `"exact phrase"` - Match exact phrase
-        - `-exclude` - Exclude term
-        - `filetype:pdf` - Find file type
-        - `OR` - Match either term
+      keywords: "3-100 diverse keywords (5-7 rec). Each separate Google search parallel. 7 angles: broad | technical | problems | best practices+year | vs/OR | tutorial | patterns. Operators: site:, \"exact\", -exclude, filetype:, OR."
