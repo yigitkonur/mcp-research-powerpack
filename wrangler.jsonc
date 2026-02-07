@@ -1,0 +1,24 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "mcp-researchpowerpack",
+	"main": "src/worker.ts",
+	"compatibility_date": "2025-03-10",
+	"compatibility_flags": ["nodejs_compat"],
+	"migrations": [
+		{
+			"new_sqlite_classes": ["ResearchPowerpackMCP"],
+			"tag": "v1"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "ResearchPowerpackMCP",
+				"name": "MCP_OBJECT"
+			}
+		]
+	},
+	"observability": {
+		"enabled": true
+	}
+}

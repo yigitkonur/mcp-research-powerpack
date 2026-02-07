@@ -193,17 +193,112 @@ process.stdout.on('error', (err: NodeJS.ErrnoException) => {
 });
 
 // ============================================================================
-// Start Server
+// Start Server — STDIO (default) or HTTP Streamable (MCP_TRANSPORT=http)
 // ============================================================================
 
-const transport = new StdioServerTransport();
+const transportMode = (process.env.MCP_TRANSPORT || 'stdio').toLowerCase();
 
-// Connect with error handling
-try {
-  server.connect(transport);
-  console.error(`🚀 ${SERVER.NAME} v${SERVER.VERSION} ready`);
-} catch (error) {
-  const err = classifyError(error);
-  console.error(`[MCP Server] Failed to start: ${err.message}`);
-  process.exit(1);
+if (transportMode === 'http') {
+  // HTTP Streamable transport — stateful sessions over HTTP
+  const { StreamableHTTPServerTransport } = await import(
+    '@modelcontextprotocol/sdk/server/streamableHttp.js'
+  );
+  const { createServer: createHttpServer } = await import('node:http');
+  const { randomUUID } = await import('node:crypto');
+
+  const PORT = parseInt(process.env.MCP_PORT || '3000', 10);
+
+  // Map of session ID → transport for multi-session support
+  const sessions = new Map<string, InstanceType<typeof StreamableHTTPServerTransport>>();
+
+  const httpServer = createHttpServer(async (req, res) => {
+    const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+
+    // Health check
+    if (url.pathname === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', name: SERVER.NAME, version: SERVER.VERSION }));
+      return;
+    }
+
+    // MCP endpoint
+    if (url.pathname === '/mcp') {
+      // Handle DELETE — session termination
+      if (req.method === 'DELETE') {
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        if (sessionId && sessions.has(sessionId)) {
+          const transport = sessions.get(sessionId)!;
+          await transport.handleRequest(req, res);
+          sessions.delete(sessionId);
+        } else {
+          res.writeHead(404).end('Session not found');
+        }
+        return;
+      }
+
+      // For GET/POST — find existing session or create new one
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+      if (sessionId && sessions.has(sessionId)) {
+        // Existing session
+        await sessions.get(sessionId)!.handleRequest(req, res);
+      } else if (!sessionId && req.method === 'POST') {
+        // New session (initialization)
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (id) => {
+            sessions.set(id, transport);
+            console.error(`[HTTP] Session ${id} initialized`);
+          },
+          onsessionclosed: (id) => {
+            sessions.delete(id);
+            console.error(`[HTTP] Session ${id} closed`);
+          },
+        });
+
+        // Each new transport needs its own server instance connected
+        const sessionServer = new Server(
+          { name: SERVER.NAME, version: SERVER.VERSION },
+          { capabilities: { tools: {}, logging: {} } }
+        );
+        initLogger(sessionServer);
+        sessionServer.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
+        sessionServer.setRequestHandler(CallToolRequestSchema, async (request) => {
+          const { name, arguments: args } = request.params;
+          try {
+            return await executeTool(name, args, capabilities);
+          } catch (error) {
+            if (error instanceof McpError) throw error;
+            const structuredError = classifyError(error);
+            console.error(`[HTTP] Tool "${name}" error:`, structuredError.message);
+            return createToolErrorFromStructured(structuredError);
+          }
+        });
+
+        await sessionServer.connect(transport);
+        await transport.handleRequest(req, res);
+      } else {
+        res.writeHead(400).end('Bad request — missing session ID');
+      }
+      return;
+    }
+
+    res.writeHead(404).end('Not found');
+  });
+
+  httpServer.listen(PORT, () => {
+    console.error(`🚀 ${SERVER.NAME} v${SERVER.VERSION} listening on http://localhost:${PORT}/mcp`);
+  });
+} else {
+  // STDIO transport (default)
+  const transport = new StdioServerTransport();
+
+  try {
+    server.connect(transport);
+    console.error(`🚀 ${SERVER.NAME} v${SERVER.VERSION} ready (stdio)`);
+  } catch (error) {
+    const err = classifyError(error);
+    console.error(`[MCP Server] Failed to start: ${err.message}`);
+    process.exit(1);
+  }
 }
