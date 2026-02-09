@@ -110,10 +110,31 @@ export default {
       );
     }
 
+    // Handle OAuth discovery endpoint - indicate OAuth is not supported
+    if (url.pathname === '/.well-known/oauth-authorization-server') {
+      return new Response(
+        JSON.stringify({
+          error: 'unsupported',
+          error_description: 'OAuth authentication is not supported by this MCP server'
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        },
+      );
+    }
+
     if (url.pathname === '/mcp' || url.pathname === '/sse' || url.pathname === '/message') {
       return ResearchPowerpackMCP.serve('/mcp').fetch(request, env, ctx);
     }
 
-    return new Response('Not found', { status: 404 });
+    // Return JSON for 404s to avoid parse errors
+    return new Response(
+      JSON.stringify({ error: 'Not found', path: url.pathname }),
+      {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   },
 };
