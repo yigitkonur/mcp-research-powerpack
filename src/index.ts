@@ -36,41 +36,36 @@ if (capabilities.scraping && !capabilities.llmExtraction) {
 // Server Setup
 // ============================================================================
 
+/**
+ * Register shared tool handlers on any Server instance.
+ * Used by both STDIO and HTTP session servers to avoid duplication.
+ */
+function registerToolHandlers(srv: Server): void {
+  initLogger(srv);
+  srv.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
+  srv.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    try {
+      return await executeTool(name, args, capabilities);
+    } catch (error) {
+      if (error instanceof McpError) throw error;
+      const structuredError = classifyError(error);
+      console.error(`[MCP Server] Tool "${name}" error:`, {
+        code: structuredError.code,
+        message: structuredError.message,
+        retryable: structuredError.retryable,
+      });
+      return createToolErrorFromStructured(structuredError);
+    }
+  });
+}
+
 const server = new Server(
   { name: SERVER.NAME, version: SERVER.VERSION },
   { capabilities: { tools: {}, logging: {} } }
 );
 
-initLogger(server);
-
-server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
-
-/**
- * Tool execution handler - uses registry pattern for clean routing
- * All capability checks, validation, and error handling are in executeTool
- */
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  try {
-    // All routing handled by registry - no more if/else blocks!
-    return await executeTool(name, args, capabilities);
-  } catch (error) {
-    // McpError propagates to client as protocol error
-    if (error instanceof McpError) {
-      throw error;
-    }
-
-    // Unexpected error - format as tool error
-    const structuredError = classifyError(error);
-    console.error(`[MCP Server] Tool "${name}" error:`, {
-      code: structuredError.code,
-      message: structuredError.message,
-      retryable: structuredError.retryable,
-    });
-    return createToolErrorFromStructured(structuredError);
-  }
-});
+registerToolHandlers(server);
 
 // ============================================================================
 // Global Error Handlers - MUST EXIT on fatal errors per Node.js best practices
@@ -208,8 +203,11 @@ if (transportMode === 'http') {
 
   const PORT = parseInt(process.env.MCP_PORT || '3000', 10);
 
-  // Map of session ID → transport for multi-session support
-  const sessions = new Map<string, InstanceType<typeof StreamableHTTPServerTransport>>();
+  // Map of session ID → transport + server for multi-session support
+  const sessions = new Map<string, {
+    transport: InstanceType<typeof StreamableHTTPServerTransport>;
+    server: Server;
+  }>();
 
   const httpServer = createHttpServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://localhost:${PORT}`);
@@ -227,9 +225,10 @@ if (transportMode === 'http') {
       if (req.method === 'DELETE') {
         const sessionId = req.headers['mcp-session-id'] as string | undefined;
         if (sessionId && sessions.has(sessionId)) {
-          const transport = sessions.get(sessionId)!;
-          await transport.handleRequest(req, res);
+          const session = sessions.get(sessionId)!;
+          await session.transport.handleRequest(req, res);
           sessions.delete(sessionId);
+          try { await session.server.close(); } catch { /* ignore */ }
         } else {
           res.writeHead(404).end('Session not found');
         }
@@ -241,39 +240,31 @@ if (transportMode === 'http') {
 
       if (sessionId && sessions.has(sessionId)) {
         // Existing session
-        await sessions.get(sessionId)!.handleRequest(req, res);
+        await sessions.get(sessionId)!.transport.handleRequest(req, res);
       } else if (!sessionId && req.method === 'POST') {
         // New session (initialization)
-        const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          onsessioninitialized: (id) => {
-            sessions.set(id, transport);
-            console.error(`[HTTP] Session ${id} initialized`);
-          },
-          onsessionclosed: (id) => {
-            sessions.delete(id);
-            console.error(`[HTTP] Session ${id} closed`);
-          },
-        });
-
-        // Each new transport needs its own server instance connected
         const sessionServer = new Server(
           { name: SERVER.NAME, version: SERVER.VERSION },
           { capabilities: { tools: {}, logging: {} } }
         );
-        initLogger(sessionServer);
-        sessionServer.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
-        sessionServer.setRequestHandler(CallToolRequestSchema, async (request) => {
-          const { name, arguments: args } = request.params;
-          try {
-            return await executeTool(name, args, capabilities);
-          } catch (error) {
-            if (error instanceof McpError) throw error;
-            const structuredError = classifyError(error);
-            console.error(`[HTTP] Tool "${name}" error:`, structuredError.message);
-            return createToolErrorFromStructured(structuredError);
-          }
+
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (id) => {
+            sessions.set(id, { transport, server: sessionServer });
+            console.error(`[HTTP] Session ${id} initialized`);
+          },
+          onsessionclosed: async (id) => {
+            const session = sessions.get(id);
+            if (session) {
+              sessions.delete(id);
+              try { await session.server.close(); } catch { /* ignore */ }
+            }
+            console.error(`[HTTP] Session ${id} closed`);
+          },
         });
+
+        registerToolHandlers(sessionServer);
 
         await sessionServer.connect(transport);
         await transport.handleRequest(req, res);
@@ -294,7 +285,7 @@ if (transportMode === 'http') {
   const transport = new StdioServerTransport();
 
   try {
-    server.connect(transport);
+    await server.connect(transport);
     console.error(`🚀 ${SERVER.NAME} v${SERVER.VERSION} ready (stdio)`);
   } catch (error) {
     const err = classifyError(error);

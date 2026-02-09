@@ -12,6 +12,7 @@ import {
   ErrorCode,
   type StructuredError,
 } from '../utils/errors.js';
+import { mcpLog } from '../utils/logger.js';
 
 interface ProcessingConfig {
   use_llm: boolean;
@@ -116,7 +117,8 @@ function calculateLLMBackoff(attempt: number): number {
 export async function processContentWithLLM(
   content: string,
   config: ProcessingConfig,
-  processor?: OpenAI | null
+  processor?: OpenAI | null,
+  signal?: AbortSignal
 ): Promise<LLMResult> {
   // Early returns for invalid/skip conditions
   if (!config.use_llm) {
@@ -167,21 +169,21 @@ export async function processContentWithLLM(
   for (let attempt = 0; attempt <= LLM_RETRY_CONFIG.maxRetries; attempt++) {
     try {
       if (attempt === 0) {
-        console.error(`[LLM Processor] Starting extraction with ${LLM_EXTRACTION.MODEL}`);
+        mcpLog('info', `Starting extraction with ${LLM_EXTRACTION.MODEL}`, 'llm');
       } else {
-        console.error(`[LLM Processor] Retry attempt ${attempt}/${LLM_RETRY_CONFIG.maxRetries}`);
+        mcpLog('warning', `Retry attempt ${attempt}/${LLM_RETRY_CONFIG.maxRetries}`, 'llm');
       }
 
-      const response = await processor.chat.completions.create(requestBody as any);
+      const response = await processor.chat.completions.create(requestBody as any, { signal });
 
       const result = response.choices?.[0]?.message?.content;
       if (result && result.trim()) {
-        console.error(`[LLM Processor] Successfully extracted ${result.length} characters`);
+        mcpLog('info', `Successfully extracted ${result.length} characters`, 'llm');
         return { content: result, processed: true };
       }
 
       // Empty response - not retryable
-      console.error('[LLM Processor] Received empty response from LLM');
+      mcpLog('warning', 'Received empty response from LLM', 'llm');
       return {
         content,
         processed: false,
@@ -198,17 +200,13 @@ export async function processContentWithLLM(
 
       // Log the error
       const errDetails = err as { status?: number; code?: string };
-      console.error(`[LLM Processor] Error (attempt ${attempt + 1}): ${lastError.message}`, {
-        status: errDetails.status,
-        code: errDetails.code,
-        retryable: isRetryableLLMError(err),
-      });
+      mcpLog('error', `Error (attempt ${attempt + 1}): ${lastError.message} [status=${errDetails.status}, code=${errDetails.code}, retryable=${isRetryableLLMError(err)}]`, 'llm');
 
       // Check if we should retry
       if (isRetryableLLMError(err) && attempt < LLM_RETRY_CONFIG.maxRetries) {
         const delayMs = calculateLLMBackoff(attempt);
-        console.error(`[LLM Processor] Retrying in ${delayMs}ms...`);
-        await sleep(delayMs);
+        mcpLog('warning', `Retrying in ${delayMs}ms...`, 'llm');
+        await sleep(delayMs, signal);
         continue;
       }
 
@@ -219,7 +217,7 @@ export async function processContentWithLLM(
 
   // All attempts failed - return original content with error info
   const errorMessage = lastError?.message || 'Unknown LLM error';
-  console.error(`[LLM Processor] All attempts failed: ${errorMessage}. Returning original content.`);
+  mcpLog('error', `All attempts failed: ${errorMessage}. Returning original content.`, 'llm');
 
   return {
     content, // Return original content as fallback
