@@ -110,12 +110,17 @@ export default {
       );
     }
 
-    // Handle OAuth discovery endpoint - indicate OAuth is not supported
-    if (url.pathname === '/.well-known/oauth-authorization-server') {
+    // Handle OAuth discovery endpoints - return 404 to indicate authless server
+    // Per MCP spec: authless servers should NOT serve OAuth metadata
+    if (
+      url.pathname === '/.well-known/oauth-protected-resource' ||
+      url.pathname.startsWith('/.well-known/oauth-protected-resource/') ||
+      url.pathname === '/.well-known/oauth-authorization-server'
+    ) {
       return new Response(
         JSON.stringify({
-          error: 'unsupported',
-          error_description: 'OAuth authentication is not supported by this MCP server'
+          error: 'not_found',
+          error_description: 'This is an authless MCP server. No authentication required.'
         }),
         {
           status: 404,
