@@ -215,12 +215,21 @@ export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
       return;
     }
 
-    const timeout = setTimeout(resolve, ms);
-
-    signal?.addEventListener('abort', () => {
+    function onAbort() {
       clearTimeout(timeout);
       reject(new DOMException('Aborted', 'AbortError'));
-    }, { once: true });
+    }
+
+    const timeout = setTimeout(() => {
+      if (signal) signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+    // Re-check: signal may have aborted between initial check and listener registration
+    if (signal?.aborted) {
+      onAbort();
+    }
   });
 }
 
@@ -283,13 +292,20 @@ export function fetchWithTimeout(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  // Combine with external signal if provided
+  let onExternalAbort: (() => void) | undefined;
   if (externalSignal) {
-    externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    onExternalAbort = () => controller.abort();
+    externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+    if (externalSignal.aborted) {
+      controller.abort();
+    }
   }
 
   return fetch(url, { ...fetchOptions, signal: controller.signal }).finally(() => {
     clearTimeout(timeoutId);
+    if (externalSignal && onExternalAbort) {
+      externalSignal.removeEventListener('abort', onExternalAbort);
+    }
   });
 }
 

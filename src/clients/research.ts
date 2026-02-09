@@ -198,7 +198,8 @@ export class ResearchClient {
       maxTokens: number;
       maxSearchResults: number;
       responseFormat?: { type: 'json_object' | 'text' };
-    }
+    },
+    signal?: AbortSignal
   ): Promise<ResearchResponse> {
     const requestPayload = this.buildRequestPayload(model, messages, options);
     let lastError: StructuredError | undefined;
@@ -210,7 +211,7 @@ export class ResearchClient {
           mcpLog('warning', `Retry attempt ${attempt}/${RESEARCH_RETRY_CONFIG.maxRetries} for ${model}`, 'research');
         }
 
-        const response = await this.client.chat.completions.create(requestPayload as any);
+        const response = await this.client.chat.completions.create(requestPayload as any, { signal });
         const choice = response.choices?.[0];
         const message = choice?.message as any;
 
@@ -225,7 +226,7 @@ export class ResearchClient {
           if (attempt < RESEARCH_RETRY_CONFIG.maxRetries) {
             const delayMs = this.calculateBackoff(attempt);
             mcpLog('warning', `Empty response, retrying in ${delayMs}ms...`, 'research');
-            await sleep(delayMs);
+            await sleep(delayMs, signal);
             continue;
           }
         }
@@ -261,7 +262,7 @@ export class ResearchClient {
         if (this.isRetryableError(error) && attempt < RESEARCH_RETRY_CONFIG.maxRetries) {
           const delayMs = this.calculateBackoff(attempt);
           mcpLog('warning', `Retrying in ${delayMs}ms...`, 'research');
-          await sleep(delayMs);
+          try { await sleep(delayMs, signal); } catch { break; }
           continue;
         }
 
@@ -289,7 +290,7 @@ export class ResearchClient {
    * Returns a ResearchResponse - may contain error field on failure
    * NEVER throws - always returns a valid response object
    */
-  async research(params: ResearchParams): Promise<ResearchResponse> {
+  async research(params: ResearchParams, signal?: AbortSignal): Promise<ResearchResponse> {
     const {
       question,
       systemPrompt,
@@ -325,7 +326,7 @@ export class ResearchClient {
 
     // Try primary model first
     mcpLog('info', `Trying primary model: ${RESEARCH.MODEL}`, 'research');
-    const primaryResult = await this.executeResearch(RESEARCH.MODEL, messages, options);
+    const primaryResult = await this.executeResearch(RESEARCH.MODEL, messages, options, signal);
 
     if (!primaryResult.error) {
       return primaryResult;
@@ -334,7 +335,7 @@ export class ResearchClient {
     // Primary failed - try fallback model if different
     if (RESEARCH.FALLBACK_MODEL && RESEARCH.FALLBACK_MODEL !== RESEARCH.MODEL) {
       mcpLog('warning', `Primary model failed, trying fallback: ${RESEARCH.FALLBACK_MODEL}`, 'research');
-      const fallbackResult = await this.executeResearch(RESEARCH.FALLBACK_MODEL, messages, options);
+      const fallbackResult = await this.executeResearch(RESEARCH.FALLBACK_MODEL, messages, options, signal);
 
       if (!fallbackResult.error) {
         return fallbackResult;
