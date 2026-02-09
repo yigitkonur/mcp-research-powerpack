@@ -43,10 +43,13 @@ jobs:
         run: |
           PKG_NAME=$(node -p "require('./package.json').name")
           PKG_VER=$(node -p "require('./package.json').version")
-          if npm view "${PKG_NAME}@${PKG_VER}" version 2>/dev/null; then
+          echo "name=$PKG_NAME version=$PKG_VER"
+          if npm view "${PKG_NAME}@${PKG_VER}" version --registry https://registry.npmjs.org 2>/dev/null; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Version ${PKG_VER} already exists on npm"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Version ${PKG_VER} not found on npm"
           fi
 
       - name: Bump version
@@ -57,11 +60,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BUMP="${{ inputs.bump || 'patch' }}"
           npm version "$BUMP" -m "chore: bump version to %s [skip ci]"
+          NEW_VER=$(node -p "require('./package.json').version")
+          echo "Bumped to ${NEW_VER}"
           git push && git push --tags
           echo "bumped=true" >> "$GITHUB_OUTPUT"
 
       - name: Publish to npm (OIDC provenance)
         if: steps.check.outputs.exists == 'false' || steps.bump.outputs.bumped == 'true'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public --provenance
