@@ -139,7 +139,8 @@ async function gracefulShutdown(exitCode: number): Promise<void> {
     safeStderrWrite(`[MCP Server] Server closed at ${new Date().toISOString()}`);
   } catch (closeError) {
     if (isBrokenPipeLikeError(closeError)) {
-      process.exit(0);
+      // Preserve caller intent: fatal paths should still exit non-zero.
+      process.exit(exitCode);
       return;
     }
     safeStderrWrite(`[MCP Server] Error closing server: ${safeErrorString(closeError)}`);
