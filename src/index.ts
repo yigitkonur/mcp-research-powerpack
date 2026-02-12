@@ -17,6 +17,7 @@ import { initLogger } from './utils/logger.js';
 
 const BROKEN_PIPE_ERROR_CODES = new Set([
   'EPIPE',
+  'EIO',
   'ERR_STREAM_DESTROYED',
   'ERR_STREAM_WRITE_AFTER_END',
 ]);
@@ -39,6 +40,7 @@ function isBrokenPipeLikeError(error: unknown): boolean {
   const message = extractErrorMessage(error).toLowerCase();
   return (
     message.includes('epipe') ||
+    message.includes('eio') ||
     message.includes('broken pipe') ||
     message.includes('stream destroyed') ||
     message.includes('write after end')
