@@ -1,0 +1,4 @@
+{
+  "setup": "[[ -f \"$JEAN_ROOT_PATH/.env\" ]] && cp \"$JEAN_ROOT_PATH/.env\" . ; mkdir -p .claude && [[ -f \"$JEAN_ROOT_PATH/.claude/settings.local.json\" ]] && cp \"$JEAN_ROOT_PATH/.claude/settings.local.json\" .claude/settings.local.json ; npm ci --ignore-scripts && npm run build",
+  "run": "PORT=$(p=2500; while lsof -i :$p >/dev/null 2>&1; do p=$((p+1)); done; echo $p); MCP_TRANSPORT=http MCP_PORT=$PORT npm run dev"
+}
