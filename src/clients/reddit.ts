@@ -357,14 +357,15 @@ export class RedditClient {
     fetchComments = true,
     onBatchComplete?: (batchNum: number, totalBatches: number, processed: number) => void
   ): Promise<BatchPostResult> {
-    const totalBatches = Math.ceil(urls.length / REDDIT.BATCH_SIZE);
     const allResults = new Map<string, PostResult | Error>();
     let rateLimitHits = 0;
 
     const allocation = calculateCommentAllocation(urls.length);
-    const commentsPerPost = fetchComments ? (maxCommentsOverride || allocation.perPostCapped) : 0;
+    const initialPerPost = fetchComments ? (maxCommentsOverride || allocation.perPostCapped) : 0;
 
-    mcpLog('info', `Fetching ${urls.length} posts in ${totalBatches} batch(es), ${commentsPerPost} comments/post`, 'reddit');
+    // ── Phase 1: Fetch all posts with equal initial allocation ──
+    const totalBatches = Math.ceil(urls.length / REDDIT.BATCH_SIZE);
+    mcpLog('info', `Phase 1: Fetching ${urls.length} posts in ${totalBatches} batch(es), ${initialPerPost} comments/post`, 'reddit');
 
     for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
       const startIdx = batchNum * REDDIT.BATCH_SIZE;
@@ -372,10 +373,9 @@ export class RedditClient {
 
       mcpLog('info', `Batch ${batchNum + 1}/${totalBatches} (${batchUrls.length} posts)`, 'reddit');
 
-      // Limit to 5 concurrent Reddit API calls within each batch
       const batchResults = await pMapSettled(
         batchUrls,
-        url => this.getPost(url, commentsPerPost),
+        url => this.getPost(url, initialPerPost),
         5
       );
 
@@ -392,7 +392,6 @@ export class RedditClient {
         }
       }
 
-      // Safe callback invocation
       try {
         onBatchComplete?.(batchNum + 1, totalBatches, allResults.size);
       } catch (callbackError) {
@@ -401,9 +400,58 @@ export class RedditClient {
 
       mcpLog('info', `Batch ${batchNum + 1} complete (${allResults.size}/${urls.length})`, 'reddit');
 
-      // Small delay between batches
       if (batchNum < totalBatches - 1) {
         await sleep(500);
+      }
+    }
+
+    // ── Phase 2: Redistribute surplus to truncated posts ──
+    if (fetchComments && !maxCommentsOverride) {
+      // Calculate surplus from posts that used fewer comments than allocated
+      let surplus = 0;
+      const truncatedUrls: string[] = [];
+
+      for (const [url, result] of allResults) {
+        if (result instanceof Error) continue;
+        const used = result.comments.length;
+        if (used < initialPerPost) {
+          // Post had fewer comments than allocated — reclaim unused budget
+          surplus += initialPerPost - used;
+        } else if (result.post.commentCount > used) {
+          // Post was truncated — it has more comments than we fetched
+          truncatedUrls.push(url);
+        }
+      }
+
+      if (surplus > 0 && truncatedUrls.length > 0) {
+        const extraPerPost = Math.min(
+          Math.floor(surplus / truncatedUrls.length),
+          REDDIT.MAX_COMMENTS_PER_POST
+        );
+        const newLimit = Math.min(initialPerPost + extraPerPost, REDDIT.MAX_COMMENTS_PER_POST);
+
+        allocation.redistributed = true;
+        mcpLog('info', `Phase 2: Redistributing ${surplus} surplus comments to ${truncatedUrls.length} truncated post(s) (${initialPerPost} → ${newLimit}/post)`, 'reddit');
+
+        const refetchResults = await pMapSettled(
+          truncatedUrls,
+          url => this.getPost(url, newLimit),
+          5
+        );
+
+        for (let i = 0; i < refetchResults.length; i++) {
+          const result = refetchResults[i];
+          const url = truncatedUrls[i] || '';
+          if (result.status === 'fulfilled') {
+            allResults.set(url, result.value);
+          } else {
+            const errorMsg = result.reason?.message || String(result.reason);
+            if (errorMsg.includes('429') || errorMsg.includes('rate')) rateLimitHits++;
+            // Keep original result on re-fetch failure (don't overwrite with error)
+          }
+        }
+
+        mcpLog('info', `Phase 2 complete: re-fetched ${truncatedUrls.length} post(s)`, 'reddit');
       }
     }
 
