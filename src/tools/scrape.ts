@@ -28,12 +28,14 @@ const markdownCleaner = new MarkdownCleaner();
 // Get extraction prefix+suffix from YAML config (fallback to hardcoded)
 function getExtractionPrefix(): string {
   const config = getToolConfig('scrape_links');
-  return config?.limits?.extraction_prefix as string || SCRAPER.EXTRACTION_PREFIX;
+  const prefix = config?.limits?.extraction_prefix;
+  return typeof prefix === 'string' ? prefix : SCRAPER.EXTRACTION_PREFIX;
 }
 
 function getExtractionSuffix(): string {
   const config = getToolConfig('scrape_links');
-  return config?.limits?.extraction_suffix as string || SCRAPER.EXTRACTION_SUFFIX;
+  const suffix = config?.limits?.extraction_suffix;
+  return typeof suffix === 'string' ? suffix : SCRAPER.EXTRACTION_SUFFIX;
 }
 
 function enhanceExtractionInstruction(instruction: string | undefined): string {

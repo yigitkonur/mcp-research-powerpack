@@ -124,7 +124,9 @@ interface GetRedditPostsOptions {
 // Get extraction suffix from YAML config (fallback to hardcoded if not found)
 function getExtractionSuffix(): string {
   const config = getToolConfig('get_reddit_post');
-  return config?.limits?.extraction_suffix as string || `
+  const suffix = config?.limits?.extraction_suffix;
+  if (typeof suffix === 'string') return suffix;
+  return `
 ---
 
 ⚠️ IMPORTANT: Extract and synthesize the key insights, opinions, and recommendations from these Reddit discussions. Focus on:

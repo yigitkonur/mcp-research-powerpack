@@ -46,7 +46,8 @@ FORMAT RULES:
 // Get research suffix from YAML config (fallback to hardcoded)
 function getResearchSuffix(): string {
   const config = getToolConfig('deep_research');
-  return config?.limits?.research_suffix as string || RESEARCH_PROMPTS.SUFFIX;
+  const suffix = config?.limits?.research_suffix;
+  return typeof suffix === 'string' ? suffix : RESEARCH_PROMPTS.SUFFIX;
 }
 
 function wrapQuestionWithCompression(question: string): string {
@@ -126,7 +127,7 @@ export async function handleDeepResearch(
         }
       }
 
-      // Wrap with compression prefix+suffix for max info density
+      // Append compression suffix for info density constraints
       enhancedQuestion = wrapQuestionWithCompression(enhancedQuestion);
 
       // ResearchClient.research() returns error in response instead of throwing

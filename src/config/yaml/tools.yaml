@@ -41,8 +41,12 @@ tools:
   - name: get_reddit_post
     category: reddit
     capability: reddit
-    limits: {min_urls: 2, max_urls: 50, recommended: 20, default_max_comments: 1000}
-    extraction_suffix: "Extract key insights: consensus, recommendations with reasoning, contrasting views, real experiences, technical details. Be comprehensive + concise, prioritize actionable info."
+    limits:
+      min_urls: 2
+      max_urls: 50
+      recommended: 20
+      default_max_comments: 1000
+      extraction_suffix: "Extract key insights: consensus, recommendations with reasoning, contrasting views, real experiences, technical details. Be comprehensive + concise, prioritize actionable info."
 
     description: |
       MIN 2 URLs, REC 10-20+. Auto comment budget: 1000 total (2 posts=500 each deep, 10=100 balanced, 20=50 broad coverage). Comments have BEST insights - always fetch_comments=true unless only need titles. DO NOT use use_llm — default is false. Users need raw exact comments to read verbatim (quotes, code snippets, specific recommendations). LLM summarization loses critical detail and nuance from discussions. Only set use_llm=true if explicitly asked to synthesize across 20+ posts. Mix subreddits for diverse perspectives. Using 2-5 posts = narrow. 20-30 posts = comprehensive.
@@ -109,9 +113,14 @@ tools:
     capability: scraping
     useZodSchema: true
     zodSchemaRef: "scrapeLinksParamsSchema"
-    limits: {min_urls: 1, max_urls: 50, recommended: 5, min_extract_len: 50, min_targets: 3}
-    extraction_prefix: "Extract ONLY from document — never hallucinate. For structured data (pricing, specs, features) → markdown table. Otherwise → tight bullet points. No intro, no confirmation message, no meta-commentary."
-    extraction_suffix: "Output grounded info only. First line = content, not preamble."
+    limits:
+      min_urls: 1
+      max_urls: 50
+      recommended: 5
+      min_extract_len: 50
+      min_targets: 3
+      extraction_prefix: "Extract ONLY from document — never hallucinate. For structured data (pricing, specs, features) → markdown table. Otherwise → tight bullet points. No intro, no confirmation message, no meta-commentary."
+      extraction_suffix: "Output grounded info only. First line = content, not preamble."
 
     description: |
       REC 3-5 URLs. use_llm=true BY DEFAULT — AI extraction auto-filters nav/ads/footers, returns clean structured content. A compression prefix+suffix wraps your prompt automatically for max info density. 32K tokens (3=10K each, 5=6K, 10=3K, 50=640). PROMPT FORMULA — keep it tight, no verbosity: "Extract [t1] | [t2] | [t3] | [t4] | [t5] with focus on [a1], [a2], [a3]". Min 3 targets with | separator. Be specific (pricing tiers not pricing). Aim 5-10 targets. BAD: "Please extract all information about pricing and features from this page" → GOOD: "pricing tiers|limits|features|integrations|API auth|rate limits with focus on free tier, enterprise pricing". Templates: Product (pricing|features|reviews|specs|integrations|support), Tech Docs (endpoints|auth|limits|errors|examples|schemas), Competitive (features|pricing|customers|USPs|stack|testimonials). Set use_llm=false ONLY for raw HTML debugging.
