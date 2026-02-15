@@ -223,7 +223,7 @@ export class SearchClient {
       return [];
     }
 
-    let q = REDDIT_SITE_REGEX.test(query) ? query : `${query} site:reddit.com`;
+    let q = query.replace(REDDIT_SITE_REGEX, '').trim() + ' site:reddit.com';
 
     if (dateAfter) {
       q += ` after:${dateAfter}`;

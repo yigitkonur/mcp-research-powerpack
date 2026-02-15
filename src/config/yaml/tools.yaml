@@ -11,10 +11,10 @@ shared:
   philosophy: "MAXIMIZE inputs for parallel processing - NO time penalty for more items! More diverse inputs = better coverage = higher quality. Each input MUST target DIFFERENT angle - NO overlap/duplicates. ALWAYS use sequentialthinking between tool calls."
 
   workflow: |
-    MANDATORY: THINK first (plan strategy) → EXECUTE with MAX diversity (use recommended counts) → THINK after (evaluate: what's missing? new angles discovered? gaps in coverage?) → ITERATE if needed (refine based on findings) → SYNTHESIZE final output.
-    KEY INSIGHT: First research pass usually incomplete - reveals what you SHOULD have asked! Results are feedback - use them to ask better questions next iteration.
+    MANDATORY: THINK → EXECUTE (max diversity) → THINK (evaluate: gaps? claims to verify? links to follow?) → CROSS-REFERENCE (Reddit claims → web search, web results → scrape) → ITERATE → SYNTHESIZE.
+    NEVER stop after one tool call. Every search result has URLs to scrape. Every Reddit discussion has claims to verify. Every scraped page has links to follow.
 
-  iteration_triggers: "Iterate when: Results mention concepts you didn't research | Answers raise NEW questions | Initial scope too narrow | Related topics discovered you should explore"
+  iteration_triggers: "Iterate when: Reddit comments mention specific tools/links (scrape them) | Research cites sources (verify them) | Community claims contradict each other (web search for truth) | Results mention concepts you didn't research | First pass is ALWAYS incomplete"
 
 tools:
   - name: search_reddit

@@ -53,13 +53,14 @@ export async function handleScrapeLinks(
   const startTime = Date.now();
 
   // Helper to create error response
-  const createErrorResponse = (code: string, message: string, retryable = false): { content: string; structuredContent: ScrapeLinksOutput } => ({
+  const createErrorResponse = (code: string, message: string, retryable = false, alternatives?: string[]): { content: string; structuredContent: ScrapeLinksOutput } => ({
     content: formatError({
       code,
       message,
       retryable,
       toolName: 'scrape_links',
       howToFix: code === 'NO_URLS' ? ['Provide at least one valid URL'] : undefined,
+      alternatives,
     }),
     structuredContent: {
       content: message,
@@ -92,7 +93,10 @@ export async function handleScrapeLinks(
   }
 
   if (validUrls.length === 0) {
-    return createErrorResponse('INVALID_URLS', `All ${params.urls.length} URLs are invalid`);
+    return createErrorResponse('INVALID_URLS', `All ${params.urls.length} URLs are invalid`, false, [
+      'web_search(keywords=["topic documentation", "topic guide"]) — search for valid URLs first, then scrape the results',
+      'search_reddit(queries=["topic recommendations"]) — find discussion URLs to scrape instead',
+    ]);
   }
 
   const tokensPerUrl = calculateTokenAllocation(validUrls.length, TOKEN_BUDGETS.SCRAPER);
@@ -106,7 +110,11 @@ export async function handleScrapeLinks(
     client = new ScraperClient();
   } catch (error) {
     const err = classifyError(error);
-    return createErrorResponse('CLIENT_INIT_FAILED', `Failed to initialize scraper: ${err.message}`);
+    return createErrorResponse('CLIENT_INIT_FAILED', `Failed to initialize scraper: ${err.message}`, false, [
+      'web_search(keywords=["topic key findings", "topic summary", "topic overview"]) — search for information instead of scraping',
+      'search_reddit(queries=["topic discussion", "topic recommendations"]) — get community insights as an alternative',
+      'deep_research(questions=[{question: "Summarize the key information from [topic/URLs]"}]) — use AI research to gather equivalent information',
+    ]);
   }
 
   const llmProcessor = createLLMProcessor(); // Returns null if not configured
@@ -233,9 +241,11 @@ export async function handleScrapeLinks(
   });
 
   const nextSteps = [
-    successful > 0 ? `Extract specific data: scrape_links(urls=[...], use_llm=true, what_to_extract="Extract pricing | features | testimonials")` : null,
+    successful > 0 ? 'FOLLOW LINKS: If scraped content references other URLs/docs/sources, scrape those too: scrape_links(urls=[...extracted URLs...], use_llm=true)' : null,
+    successful > 0 ? 'VERIFY: web_search(keywords=["claim from scraped content", "topic official source", "topic benchmark data"]) — cross-check extracted claims' : null,
+    successful > 0 ? 'COMMUNITY: search_reddit(queries=["topic experiences", "topic recommendations", "topic issues"]) — if topic warrants community perspective' : null,
+    successful > 0 ? 'SYNTHESIZE (only after verifying + community check): deep_research(questions=[{question: "Based on scraped data and verification..."}])' : null,
     failed > 0 ? `Retry failed URLs with longer timeout: scrape_links(urls=[...], timeout=60)` : null,
-    'Research further: deep_research(questions=[{question: "Based on scraped content..."}])',
   ].filter(Boolean) as string[];
 
   const formattedContent = formatSuccess({

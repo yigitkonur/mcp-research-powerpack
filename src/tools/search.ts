@@ -132,15 +132,20 @@ export async function handleWebSearch(
 
     mcpLog('info', `Search completed: ${totalResults} results, ${aggregation.totalUniqueUrls} unique URLs, ${consensusUrls.length} consensus`, 'search');
 
-    // Add Next Steps section
-    const nextSteps = [
-      consensusUrls.length > 0 ? `Scrape top consensus URLs: scrape_links(urls=[${consensusUrls.slice(0, 3).map(u => `"${u.url}"`).join(', ')}], use_llm=true)` : null,
-      'Get Reddit perspective: search_reddit(queries=[...related terms...])',
-      'Deep research: deep_research(questions=[{question: "Based on search results..."}])',
-    ].filter(Boolean) as string[];
+    // Add Next Steps section — scraping is MANDATORY, not optional
+    const topConsensusUrls = consensusUrls.length > 0
+      ? consensusUrls.slice(0, 5).map(u => `"${u.url}"`).join(', ')
+      : aggregation.rankedUrls.slice(0, 5).map(u => `"${u.url}"`).join(', ');
 
-    markdown += '\n\n---\n\n**Next Steps:**\n';
-    nextSteps.forEach(step => { markdown += `→ ${step}\n`; });
+    const nextSteps = [
+      `MUST DO: scrape_links(urls=[${topConsensusUrls}], use_llm=true, what_to_extract="Extract key findings | recommendations | data | evidence | comparisons") — searching only gives URLs, scraping gets the actual content`,
+      'COMMUNITY CHECK: search_reddit(queries=["topic recommendations", "topic best 2025", "topic vs alternatives"]) — get real user experiences',
+      'ITERATE: If results are insufficient, search again with different keywords from "Related" suggestions above',
+      'SYNTHESIZE (only after scraping + Reddit): deep_research(questions=[{question: "Based on scraped content and community feedback..."}])',
+    ];
+
+    markdown += '\n\n---\n\n**Next Steps (DO ALL — research is a loop, not a single call):**\n';
+    nextSteps.forEach((step, i) => { markdown += `${i + 1}. ${step}\n`; });
 
     markdown += `\n---\n*${formatDuration(executionTime)} | ${aggregation.totalUniqueUrls} unique URLs | ${consensusUrls.length} consensus*`;
 
@@ -167,8 +172,9 @@ export async function handleWebSearch(
       toolName: 'web_search',
       howToFix: ['Verify SERPER_API_KEY is set correctly'],
       alternatives: [
-        'search_reddit(queries=[...]) for Reddit-specific results',
-        'deep_research(questions=[...]) for AI-synthesized research',
+        'search_reddit(queries=["topic recommendations", "topic best practices", "topic vs alternatives"]) — Reddit search uses the same API but may work; also provides community perspective',
+        'deep_research(questions=[{question: "What are the key findings, best practices, and recommendations for [topic]?"}]) — uses OpenRouter API (different key), not affected by this error',
+        'scrape_links(urls=[...any URLs you already have...], use_llm=true) — if you have URLs from prior steps, scrape them now instead of searching',
       ],
     });
 

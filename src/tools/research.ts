@@ -71,7 +71,7 @@ export async function handleDeepResearch(
         code: 'MIN_QUESTIONS',
         message: `Minimum ${MIN_QUESTIONS} research question(s) required. Received: ${questions.length}`,
         toolName: 'deep_research',
-        howToFix: ['Add at least one question with detailed context'],
+        howToFix: ['Add at least one question with detailed context following the template: WHAT I NEED, WHY, WHAT I KNOW, SPECIFIC QUESTIONS'],
       }),
       structuredContent: { error: true, message: `Minimum ${MIN_QUESTIONS} question(s) required` },
     };
@@ -104,6 +104,11 @@ export async function handleDeepResearch(
         message: `Failed to initialize research client: ${err.message}`,
         toolName: 'deep_research',
         howToFix: ['Check OPENROUTER_API_KEY is set'],
+        alternatives: [
+          'web_search(keywords=["topic best practices", "topic guide", "topic comparison 2025"]) — uses Serper API (different key), search for information directly',
+          'search_reddit(queries=["topic recommendations", "topic experience", "topic discussion"]) — uses Serper API, get community perspective',
+          'scrape_links(urls=[...any relevant URLs...], use_llm=true) — if you have URLs, scrape them for content (uses Firecrawl + OpenRouter, may also fail if OpenRouter key is the issue)',
+        ],
       }),
       structuredContent: { error: true, message: `Failed to initialize: ${err.message}` },
     };
@@ -207,9 +212,11 @@ export async function handleDeepResearch(
   }
 
   const nextSteps = [
-    successful.length > 0 ? 'Scrape mentioned sources: scrape_links(urls=[...extracted URLs...], use_llm=true)' : null,
+    successful.length > 0 ? 'SCRAPE CITED SOURCES: scrape_links(urls=[...URLs cited in research above...], use_llm=true, what_to_extract="Extract evidence | data | methodology | conclusions") — verify research citations with primary sources' : null,
+    successful.length > 0 ? 'COMMUNITY VALIDATION: search_reddit(queries=["topic findings", "topic real experience", "topic criticism"]) — check if community agrees with research findings' : null,
+    successful.length > 0 ? 'ITERATE: If research revealed gaps or new questions, run deep_research again with refined questions targeting those gaps' : null,
+    successful.length > 0 ? 'WEB VERIFY: web_search(keywords=["specific claim from research", "topic latest data 2025"]) — if claims need independent verification' : null,
     failed.length > 0 ? 'Retry failed questions with more specific context' : null,
-    'Search Reddit for community perspective: search_reddit(queries=[...related topics...])',
   ].filter(Boolean) as string[];
 
   const formattedContent = formatSuccess({

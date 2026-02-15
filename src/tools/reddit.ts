@@ -86,8 +86,9 @@ export async function handleSearchReddit(
           'Remove date filters if using them',
         ],
         alternatives: [
-          'web_search(keywords=[...]) for general web results',
-          'deep_research(questions=[...]) for synthesized analysis',
+          'web_search(keywords=["topic best practices", "topic guide", "topic recommendations 2025"]) — get results from the broader web instead',
+          'scrape_links(urls=[...any URLs you already have...], use_llm=true) — if you have URLs from earlier searches, scrape them now',
+          'deep_research(questions=[{question: "What are the key findings about [topic]?"}]) — synthesize from AI research',
         ],
       });
     }
@@ -105,7 +106,11 @@ export async function handleSearchReddit(
       retryable: structuredError.retryable,
       toolName: 'search_reddit',
       howToFix: ['Verify SERPER_API_KEY is set correctly'],
-      alternatives: ['web_search(keywords=[...]) as backup'],
+      alternatives: [
+        'web_search(keywords=["topic recommendations", "topic best practices", "topic vs alternatives"]) — uses the same API key, but try anyway as it may work for general search',
+        'deep_research(questions=[{question: "What does the community recommend for [topic]?"}]) — uses a different API (OpenRouter), not affected by this error',
+        'scrape_links(urls=[...any URLs you already have...], use_llm=true) — if you have URLs from prior steps, scrape them now',
+      ],
     });
   }
 }
@@ -162,6 +167,9 @@ export async function handleGetRedditPosts(
         message: `Minimum ${REDDIT.MIN_POSTS} Reddit posts required. Received: ${urls.length}`,
         toolName: 'get_reddit_post',
         howToFix: [`Add at least ${REDDIT.MIN_POSTS - urls.length} more Reddit URL(s)`],
+        alternatives: [
+          `search_reddit(queries=["topic discussion", "topic recommendations", "topic experiences"]) — find more Reddit posts first, then call get_reddit_post with ${REDDIT.MIN_POSTS}+ URLs`,
+        ],
       });
     }
     if (urls.length > REDDIT.MAX_POSTS) {
@@ -244,9 +252,11 @@ export async function handleGetRedditPosts(
     }
 
     const nextSteps = [
-      successful > 0 ? 'Research further: deep_research(questions=[{question: "Based on Reddit discussion..."}])' : null,
+      successful > 0 ? 'VERIFY CLAIMS: web_search(keywords=["topic claim1 verify", "topic claim2 official docs", "topic best practices"]) — community says X, verify with web' : null,
+      successful > 0 ? 'SCRAPE REFERENCED LINKS: scrape_links(urls=[...URLs found in comments...], use_llm=true, what_to_extract="Extract evidence | data | recommendations") — follow external links from discussions' : null,
+      'BROADEN: search_reddit(queries=[...related angles...]) — if more perspectives needed',
+      successful > 0 ? 'SYNTHESIZE (only after verifying + scraping): deep_research(questions=[{question: "Based on verified Reddit findings about [topic]..."}])' : null,
       failed > 0 ? 'Retry failed URLs individually' : null,
-      'Search related topics: search_reddit(queries=[...related terms...])',
     ].filter(Boolean) as string[];
 
     const extraStatus = statusExtras.length > 0 ? `\n${statusExtras.join(' | ')}` : '';
@@ -265,6 +275,11 @@ export async function handleGetRedditPosts(
       retryable: structuredError.retryable,
       toolName: 'get_reddit_post',
       howToFix: ['Verify REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET are set'],
+      alternatives: [
+        'web_search(keywords=["topic reddit discussion", "topic reddit recommendations"]) — search for Reddit content via web search instead',
+        'scrape_links(urls=[...the Reddit URLs...], use_llm=true, what_to_extract="Extract post content | top comments | recommendations") — scrape Reddit pages directly as a fallback',
+        'deep_research(questions=[{question: "What are community opinions on [topic]?"}]) — get AI-synthesized community perspective',
+      ],
     });
   }
 }

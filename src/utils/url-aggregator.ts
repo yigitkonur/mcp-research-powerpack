@@ -648,37 +648,42 @@ export function generateRedditEnhancedOutput(
   lines.push(`- **High-Consensus Posts:** ${consensusUrls.length}`);
   lines.push('');
 
-  // Next Steps - actionable follow-up commands
+  // Next Steps - actionable follow-up commands that form a research loop
   lines.push('---');
   lines.push('');
-  lines.push('### ➡️ Next Steps');
+  lines.push('### ➡️ Next Steps (DO ALL OF THESE — research is iterative)');
   lines.push('');
 
-  // Generate URL list for get_reddit_post command
+  // IMMEDIATE: Fetch raw comments
   const topUrls = rankedUrls.slice(0, Math.min(10, rankedUrls.length));
   if (topUrls.length >= 2) {
     const urlList = topUrls.map(u => `"${u.url}"`).join(', ');
-    lines.push(`**Fetch full posts with comments:**`);
+    lines.push(`**1. IMMEDIATE — Fetch raw comments (best insights are in comments):**`);
     lines.push('```');
     lines.push(`get_reddit_post(urls=[${urlList}], fetch_comments=true)`);
     lines.push('```');
     lines.push('');
   }
 
-  // Suggest LLM extraction if there are consensus posts
-  if (consensusUrls.length > 0) {
-    const consensusUrlList = consensusUrls.slice(0, 5).map(u => `"${u.url}"`).join(', ');
-    lines.push(`**Extract insights with AI (recommended for consensus posts):**`);
-    lines.push('```');
-    lines.push(`get_reddit_post(urls=[${consensusUrlList}], fetch_comments=true, use_llm=true, what_to_extract="Extract key recommendations, consensus opinions, and practical advice")`);
-    lines.push('```');
-    lines.push('');
-  }
-
-  // Deep research follow-up
-  lines.push(`**Synthesize findings with deep research:**`);
+  // VERIFY: Cross-check community claims with web search
+  const topicKeyword = allQueries[0] || 'topic';
+  lines.push(`**2. VERIFY — Cross-check Reddit claims with web search:**`);
   lines.push('```');
-  lines.push(`deep_research(questions=[{question: "Based on these Reddit discussions about [topic], what are the main recommendations, common issues, and best practices?"}])`);
+  lines.push(`web_search(keywords=["${topicKeyword} official docs", "${topicKeyword} best practices 2025", "${topicKeyword} comparison benchmark"])`);
+  lines.push('```');
+  lines.push('');
+
+  // DEEP DIVE: Scrape external links referenced in posts
+  lines.push(`**3. DEEP DIVE — If posts reference external links/docs, scrape them:**`);
+  lines.push('```');
+  lines.push(`scrape_links(urls=[...URLs mentioned in Reddit posts...], use_llm=true, what_to_extract="Extract key findings | recommendations | data points | comparisons")`);
+  lines.push('```');
+  lines.push('');
+
+  // SYNTHESIZE: Only after gathering raw data
+  lines.push(`**4. SYNTHESIZE — Only after steps 1-3:**`);
+  lines.push('```');
+  lines.push(`deep_research(questions=[{question: "Based on Reddit discussions and web verification about [topic], what are the validated recommendations?"}])`);
   lines.push('```');
   lines.push('');
 

@@ -86,6 +86,7 @@ export interface ErrorOptions {
 
 /**
  * Format an error response with recovery guidance
+ * Designed to keep agents moving — every error includes actionable alternatives
  */
 export function formatError(opts: ErrorOptions): string {
   const parts: string[] = [];
@@ -94,10 +95,10 @@ export function formatError(opts: ErrorOptions): string {
   const prefix = opts.toolName ? `[${opts.toolName}] ` : '';
   parts.push(`❌ ${prefix}${opts.code}: ${opts.message}`);
 
-  // Retryable hint
+  // Retryable hint — be specific about what to do while waiting
   if (opts.retryable) {
     parts.push('');
-    parts.push('*This error is retryable. Wait a moment and try again.*');
+    parts.push('*This error is retryable. Wait a moment and try again — but use the alternatives below in the meantime so research continues.*');
   }
 
   // How to fix
@@ -107,11 +108,17 @@ export function formatError(opts: ErrorOptions): string {
     opts.howToFix.forEach((step, i) => parts.push(`${i + 1}. ${step}`));
   }
 
-  // Alternatives
+  // Alternatives — directive, not optional
   if (opts.alternatives?.length) {
     parts.push('');
-    parts.push('**Alternatives:**');
-    opts.alternatives.forEach(alt => parts.push(`• ${alt}`));
+    parts.push('**DO THIS INSTEAD (don\'t stop researching):**');
+    opts.alternatives.forEach((alt, i) => parts.push(`${i + 1}. ${alt}`));
+  }
+
+  // Continuation footer — push agents to keep going
+  if (opts.alternatives?.length) {
+    parts.push('');
+    parts.push('> This tool failed but your research should NOT stop. Use the alternatives above to continue gathering information from other sources.');
   }
 
   return parts.join('\n');
