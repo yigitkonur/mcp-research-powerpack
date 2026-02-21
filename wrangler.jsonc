@@ -1,20 +1,20 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "mcp-researchpowerpack",
+	"name": "mcp-research-powerpack",
 	"account_id": "08e4791fa1dc3fcc98a7b7bc303081b6",
 	"main": "src/worker.ts",
 	"compatibility_date": "2025-03-10",
 	"compatibility_flags": ["nodejs_compat"],
 	"migrations": [
 		{
-			"new_sqlite_classes": ["ResearchPowerpackMCP"],
+			"new_sqlite_classes": ["ResearchMcpPowerpack"],
 			"tag": "v1"
 		}
 	],
 	"durable_objects": {
 		"bindings": [
 			{
-				"class_name": "ResearchPowerpackMCP",
+				"class_name": "ResearchMcpPowerpack",
 				"name": "MCP_OBJECT"
 			}
 		]
@@ -25,7 +25,7 @@
 	"workers_dev": true,
 	"routes": [
 		{
-			"pattern": "mcp-researchpowerpack.workers.yigitkonur.com",
+			"pattern": "mcp-research-powerpack.workers.yigitkonur.com",
 			"custom_domain": true
 		}
 	]

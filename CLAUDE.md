@@ -26,11 +26,11 @@ pnpm test:check          # check environment setup
 
 Transport modes:
 ```bash
-npx mcp-researchpowerpack                      # STDIO (default)
-MCP_TRANSPORT=http MCP_PORT=3000 npx mcp-researchpowerpack  # HTTP
+npx mcp-research-powerpack                      # STDIO (default)
+MCP_TRANSPORT=http MCP_PORT=3000 npx mcp-research-powerpack  # HTTP
 ```
 
-Binary names: `mcp-researchpowerpack`, `research-powerpack-mcp`.
+Binary names: `mcp-research-powerpack`, `research-powerpack-mcp`.
 
 ## Environment Variables
 
@@ -125,7 +125,7 @@ src/
 
 ## Cloudflare Workers
 
-`src/worker.ts` bridges Cloudflare env bindings into `process.env` so config modules work in both STDIO and Workers. Avoids importing `tools/definitions.ts` (which uses filesystem YAML loading) and instead registers tools directly from the registry. Uses Durable Objects (`ResearchPowerpackMCP` class with SQLite). Custom domain: `mcp-researchpowerpack.workers.yigitkonur.com`.
+`src/worker.ts` bridges Cloudflare env bindings into `process.env` so config modules work in both STDIO and Workers. Avoids importing `tools/definitions.ts` (which uses filesystem YAML loading) and instead registers tools directly from the registry. Uses Durable Objects (`ResearchMcpPowerpack` class with SQLite). Custom domain: `mcp-research-powerpack.workers.yigitkonur.com`.
 
 ## CI/CD
 

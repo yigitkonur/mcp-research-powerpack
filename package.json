@@ -1,11 +1,11 @@
 {
-  "name": "mcp-researchpowerpack",
+  "name": "mcp-research-powerpack",
   "version": "3.6.18",
   "description": "The ultimate research MCP toolkit: Reddit mining, web search with CTR aggregation, AI-powered deep research, and intelligent web scraping - all in one modular package",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "mcp-researchpowerpack": "dist/index.js",
+    "mcp-research-powerpack": "dist/index.js",
     "research-powerpack-mcp": "dist/index.js"
   },
   "files": [
@@ -44,11 +44,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yigitkonur/mcp-researchpowerpack.git"
+    "url": "git+https://github.com/yigitkonur/mcp-research-powerpack.git"
   },
-  "homepage": "https://github.com/yigitkonur/mcp-researchpowerpack#readme",
+  "homepage": "https://github.com/yigitkonur/mcp-research-powerpack#readme",
   "bugs": {
-    "url": "https://github.com/yigitkonur/mcp-researchpowerpack/issues"
+    "url": "https://github.com/yigitkonur/mcp-research-powerpack/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.1",

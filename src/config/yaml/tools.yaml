@@ -3,7 +3,7 @@
 version: "1.0"
 
 metadata:
-  name: "research-powerpack-mcp"
+  name: "mcp-research-powerpack"
   description: "Parallel research tools with AI extraction"
 
 # CORE PRINCIPLES (ALL TOOLS)

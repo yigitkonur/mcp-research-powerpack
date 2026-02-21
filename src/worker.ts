@@ -51,7 +51,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     'Parallel Google search with 3-100 keywords returning 10 results each.',
 };
 
-export class ResearchPowerpackMCP extends McpAgent {
+export class ResearchMcpPowerpack extends McpAgent {
   server = new McpServer({
     name: SERVER.NAME,
     version: SERVER.VERSION,
@@ -130,7 +130,7 @@ export default {
     }
 
     if (url.pathname === '/mcp' || url.pathname === '/sse' || url.pathname === '/message') {
-      return ResearchPowerpackMCP.serve('/mcp').fetch(request, env, ctx);
+      return ResearchMcpPowerpack.serve('/mcp').fetch(request, env, ctx);
     }
 
     // Return JSON for 404s to avoid parse errors

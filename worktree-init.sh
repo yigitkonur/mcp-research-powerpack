@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ###############################################################################
-# worktree-init.sh - Bootstrap a git worktree for mcp-researchpowerpack
+# worktree-init.sh - Bootstrap a git worktree for mcp-research-powerpack
 #
 # Run this script from the root of a freshly-created worktree.
 # It copies local config from the main repo and installs dependencies.
@@ -13,7 +13,7 @@ set -euo pipefail
 #   bash worktree-init.sh
 ###############################################################################
 
-MAIN_REPO="/Users/yigitkonur/dev/projects/mcp-researchpowerpack"
+MAIN_REPO="/Users/yigitkonur/dev/projects/mcp-research-powerpack"
 WORKTREE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "==> Initializing worktree at: ${WORKTREE_DIR}"
