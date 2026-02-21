@@ -1,12 +1,12 @@
 MCP server that gives your AI assistant research tools. Google search, Reddit deep-dives, web scraping with LLM extraction, and multi-model deep research — all as MCP tools that chain into each other.
 
 ```bash
-npx mcp-researchpowerpack
+npx mcp-research-powerpack
 ```
 
 five tools, zero config to start. each API key you add unlocks more capabilities.
 
-[![npm](https://img.shields.io/npm/v/mcp-researchpowerpack.svg?style=flat-square)](https://www.npmjs.com/package/mcp-researchpowerpack)
+[![npm](https://img.shields.io/npm/v/mcp-research-powerpack.svg?style=flat-square)](https://www.npmjs.com/package/mcp-research-powerpack)
 [![node](https://img.shields.io/badge/node-20+-93450a.svg?style=flat-square)](https://nodejs.org/)
 [![license](https://img.shields.io/badge/license-MIT-grey.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
@@ -35,7 +35,7 @@ add to your MCP config:
   "mcpServers": {
     "research-powerpack": {
       "command": "npx",
-      "args": ["mcp-researchpowerpack"],
+      "args": ["mcp-research-powerpack"],
       "env": {
         "SERPER_API_KEY": "...",
         "OPENROUTER_API_KEY": "..."
@@ -48,8 +48,8 @@ add to your MCP config:
 ### from source
 
 ```bash
-git clone https://github.com/yigitkonur/mcp-researchpowerpack.git
-cd mcp-researchpowerpack
+git clone https://github.com/yigitkonur/mcp-research-powerpack.git
+cd mcp-research-powerpack
 pnpm install && pnpm build
 pnpm start
 ```
@@ -57,7 +57,7 @@ pnpm start
 ### HTTP mode
 
 ```bash
-MCP_TRANSPORT=http MCP_PORT=3000 npx mcp-researchpowerpack
+MCP_TRANSPORT=http MCP_PORT=3000 npx mcp-research-powerpack
 ```
 
 exposes `/mcp` (POST/GET/DELETE with session headers) and `/health`.
