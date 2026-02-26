@@ -26,11 +26,11 @@ pnpm test:check          # check environment setup
 
 Transport modes:
 ```bash
-npx mcp-research-powerpack                      # STDIO (default)
-MCP_TRANSPORT=http MCP_PORT=3000 npx mcp-research-powerpack  # HTTP
+npx mcp-researchpowerpack                      # STDIO (default)
+MCP_TRANSPORT=http MCP_PORT=3000 npx mcp-researchpowerpack  # HTTP
 ```
 
-Binary names: `mcp-research-powerpack`, `research-powerpack-mcp`.
+Binary names: `mcp-researchpowerpack`, `research-powerpack-mcp`.
 
 ## Environment Variables
 

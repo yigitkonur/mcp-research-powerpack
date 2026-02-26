@@ -16,7 +16,7 @@ import { dirname, join } from 'path';
 // Defaults used when running in Workers or if package.json cannot be loaded
 let packageJson: { version: string; name: string; description: string } = {
   version: '3.6.9',
-  name: 'mcp-research-powerpack',
+  name: 'mcp-researchpowerpack',
   description: 'Research Powerpack MCP Server',
 };
 
@@ -52,7 +52,7 @@ export const PACKAGE_DESCRIPTION: string = packageJson.description;
 
 /**
  * Formatted version string for user agents and logging
- * Example: "mcp-research-powerpack/3.2.0"
+ * Example: "mcp-researchpowerpack/3.2.0"
  */
 export const USER_AGENT_VERSION: string = `${PACKAGE_NAME}/${VERSION}`;
 
