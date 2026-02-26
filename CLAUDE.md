@@ -49,7 +49,7 @@ Note: `search_reddit` uses Google Serper (`site:reddit.com`), NOT the Reddit API
 **Optional tuning:**
 - `RESEARCH_MODEL` — deep research primary model (default: `x-ai/grok-4-fast`)
 - `RESEARCH_FALLBACK_MODEL` — fallback when primary fails (default: `google/gemini-2.5-flash`)
-- `LLM_EXTRACTION_MODEL` — extraction model (default: `openai/gpt-oss-120b:nitro`)
+- `LLM_EXTRACTION_MODEL` — default extraction model for scrape/reddit (default: `openai/gpt-oss-120b:nitro`). Can be overridden per-request via `model` parameter in `scrape_links`
 - `API_TIMEOUT_MS` — request timeout (default: 1,800,000 / 30min)
 - `DEFAULT_REASONING_EFFORT` — `low|medium|high` (default: `high`)
 - `DEFAULT_MAX_URLS` — max search results per research question (default: 100, range: 10-200)

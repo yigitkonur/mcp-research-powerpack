@@ -191,7 +191,7 @@ export async function handleScrapeLinks(
 
       const llmResult = await processContentWithLLM(
         item.content,
-        { use_llm: params.use_llm, what_to_extract: enhancedInstruction, max_tokens: tokensPerUrl },
+        { use_llm: params.use_llm, what_to_extract: enhancedInstruction, max_tokens: tokensPerUrl, model: params.model },
         llmProcessor
       );
 

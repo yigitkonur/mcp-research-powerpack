@@ -18,6 +18,7 @@ interface ProcessingConfig {
   use_llm: boolean;
   what_to_extract: string | undefined;
   max_tokens?: number;
+  model?: string;
 }
 
 interface LLMResult {
@@ -154,7 +155,7 @@ export async function processContentWithLLM(
 
   // Build request body
   const requestBody: Record<string, unknown> = {
-    model: LLM_EXTRACTION.MODEL,
+    model: config.model || LLM_EXTRACTION.MODEL,
     messages: [{ role: 'user', content: prompt }],
     max_tokens: config.max_tokens || LLM_EXTRACTION.MAX_TOKENS,
   };
@@ -169,7 +170,7 @@ export async function processContentWithLLM(
   for (let attempt = 0; attempt <= LLM_RETRY_CONFIG.maxRetries; attempt++) {
     try {
       if (attempt === 0) {
-        mcpLog('info', `Starting extraction with ${LLM_EXTRACTION.MODEL}`, 'llm');
+        mcpLog('info', `Starting extraction with ${config.model || LLM_EXTRACTION.MODEL}`, 'llm');
       } else {
         mcpLog('warning', `Retry attempt ${attempt}/${LLM_RETRY_CONFIG.maxRetries}`, 'llm');
       }

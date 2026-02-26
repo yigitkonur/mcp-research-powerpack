@@ -81,7 +81,7 @@ optional tuning via environment variables:
 |:---|:---|:---|
 | `RESEARCH_MODEL` | `x-ai/grok-4-fast` | primary deep research model |
 | `RESEARCH_FALLBACK_MODEL` | `google/gemini-2.5-flash` | fallback if primary fails |
-| `LLM_EXTRACTION_MODEL` | `openai/gpt-oss-120b:nitro` | model for scrape/reddit LLM extraction |
+| `LLM_EXTRACTION_MODEL` | `openai/gpt-oss-120b:nitro` | default model for scrape/reddit LLM extraction (can be overridden per-request via the `model` parameter in `scrape_links`) |
 | `DEFAULT_REASONING_EFFORT` | `high` | research depth (`low`, `medium`, `high`) |
 | `DEFAULT_MAX_URLS` | `100` | max search results per research question (10-200) |
 | `API_TIMEOUT_MS` | `1800000` | request timeout in ms (default 30 min) |
@@ -100,7 +100,7 @@ global budget of 1,000 comments, max 200 per post. after the first pass, surplus
 
 ### scraping pipeline
 
-three-mode fallback per URL: basic → JS rendering → JS + US geo-targeting. results go through HTML-to-markdown conversion (turndown), then optional LLM extraction with a 100k char input cap and 8,000 token output per URL.
+three-mode fallback per URL: basic → JS rendering → JS + US geo-targeting. results go through HTML-to-markdown conversion (turndown), then optional LLM extraction with a 100k char input cap and 8,000 token output per URL. the extraction model defaults to `openai/gpt-oss-120b:nitro` (configurable via `LLM_EXTRACTION_MODEL` env var) and can be overridden per-request using the `model` parameter.
 
 ### deep research
 

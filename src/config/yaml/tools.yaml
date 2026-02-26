@@ -130,6 +130,7 @@ tools:
       timeout: "Timeout per URL (5-120s, default 30)"
       use_llm: "Defaults to true. AI extraction auto-filters noise, extracts only specified targets, returns clean structured content. Compression prefix+suffix auto-applied to maximize info density. Cost: ~$0.001/page. Set false ONLY for raw HTML debugging. Needs OPENROUTER_API_KEY."
       what_to_extract: "Your extraction targets — auto-wrapped with compression prefix+suffix. Formula: 'pricing tiers|limits|features|integrations|API auth with focus on free tier, enterprise'. Min 3 targets with | separator. Be terse and specific (pricing tiers not pricing, API rate limits not API info). No verbose sentences — just targets+focus. The system adds compression instructions automatically."
+      model: "Override the LLM extraction model for this request. Uses OpenRouter model IDs (e.g. 'openai/gpt-4o', 'anthropic/claude-sonnet-4', 'google/gemini-2.5-flash'). Default: openai/gpt-oss-120b:nitro (configurable via LLM_EXTRACTION_MODEL env var)."
 
 
   - name: web_search

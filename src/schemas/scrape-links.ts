@@ -34,6 +34,11 @@ const scrapeLinksParamsShape = {
     .max(1000, { message: 'scrape_links: Extraction instructions too long (max 1000 characters)' })
     .optional()
     .describe('Extraction instructions for AI. Will be wrapped with compression prefix+suffix automatically. Formula: "Extract [target1] | [target2] | [target3] with focus on [aspect1], [aspect2]". Min 3 targets with | separator. Be specific (pricing tiers not pricing). Aim 5-10 targets.'),
+  model: z
+    .string()
+    .max(200, { message: 'scrape_links: Model name too long (max 200 characters)' })
+    .optional()
+    .describe('Override the LLM extraction model for this request. Uses OpenRouter model IDs (e.g. "openai/gpt-4o", "anthropic/claude-sonnet-4", "google/gemini-2.5-flash"). Default: openai/gpt-oss-120b:nitro (configurable via LLM_EXTRACTION_MODEL env var).'),
 };
 
 export const scrapeLinksParamsSchema = z.object(scrapeLinksParamsShape);
