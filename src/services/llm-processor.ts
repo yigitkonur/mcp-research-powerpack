@@ -43,6 +43,20 @@ const RETRYABLE_LLM_ERROR_CODES = new Set([
   'service_unavailable',
 ]);
 
+/**
+ * Check if a model supports Grok-style search_parameters (xAI models)
+ */
+function isGrokStyleModel(model: string): boolean {
+  return model.startsWith('x-ai/');
+}
+
+/**
+ * Check if a model supports Gemini-style google_search tool
+ */
+function isGeminiStyleModel(model: string): boolean {
+  return model.startsWith('google/gemini');
+}
+
 let llmClient: OpenAI | null = null;
 
 export function createLLMProcessor(): OpenAI | null {
@@ -154,11 +168,26 @@ export async function processContentWithLLM(
     : `Clean and extract the main content from the following text, removing navigation, ads, and irrelevant elements:\n\n${truncatedContent}`;
 
   // Build request body
+  const resolvedModel = config.model || LLM_EXTRACTION.MODEL;
   const requestBody: Record<string, unknown> = {
-    model: config.model || LLM_EXTRACTION.MODEL,
+    model: resolvedModel,
     messages: [{ role: 'user', content: prompt }],
     max_tokens: config.max_tokens || LLM_EXTRACTION.MAX_TOKENS,
   };
+
+  // Enable web search for models that support it (mirrors deep_research pattern)
+  if (isGrokStyleModel(resolvedModel)) {
+    requestBody.search_parameters = {
+      mode: 'on',
+      max_search_results: 10,
+      return_citations: true,
+      sources: [{ type: 'web' }],
+    };
+    mcpLog('info', `Web search enabled for Grok model: ${resolvedModel}`, 'llm');
+  } else if (isGeminiStyleModel(resolvedModel)) {
+    requestBody.tools = [{ type: 'google_search', googleSearch: {} }];
+    mcpLog('info', `Google search enabled for Gemini model: ${resolvedModel}`, 'llm');
+  }
 
   if (LLM_EXTRACTION.ENABLE_REASONING) {
     requestBody.reasoning = { enabled: true };
@@ -170,7 +199,7 @@ export async function processContentWithLLM(
   for (let attempt = 0; attempt <= LLM_RETRY_CONFIG.maxRetries; attempt++) {
     try {
       if (attempt === 0) {
-        mcpLog('info', `Starting extraction with ${config.model || LLM_EXTRACTION.MODEL}`, 'llm');
+        mcpLog('info', `Starting extraction with ${resolvedModel}`, 'llm');
       } else {
         mcpLog('warning', `Retry attempt ${attempt}/${LLM_RETRY_CONFIG.maxRetries}`, 'llm');
       }
