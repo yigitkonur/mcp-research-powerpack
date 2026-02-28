@@ -187,10 +187,12 @@ export function validateArrayBounds(
   fieldName: string
 ): string | undefined {
   if (arr.length < min) {
-    return `${fieldName} requires at least ${min} items. Received: ${arr.length}`;
+    const deficit = min - arr.length;
+    return `${fieldName} requires at least ${min} items but you sent ${arr.length}. **Add ${deficit} more item(s)** to your list and call this tool again immediately. Tip: each item should cover a different angle for maximum coverage.`;
   }
   if (arr.length > max) {
-    return `${fieldName} allows at most ${max} items. Received: ${arr.length}. Please remove ${arr.length - max} item(s).`;
+    const excess = arr.length - max;
+    return `${fieldName} allows at most ${max} items but you sent ${arr.length}. **Remove ${excess} item(s)** (drop the least relevant ones) and call this tool again. If you need all ${arr.length}, split into ${Math.ceil(arr.length / max)} separate calls of ${max} items each.`;
   }
   return undefined;
 }

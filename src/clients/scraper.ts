@@ -51,7 +51,7 @@ export class ScraperClient {
     this.apiKey = apiKey || env.SCRAPER_API_KEY;
 
     if (!this.apiKey) {
-      throw new Error('SCRAPEDO_API_KEY is required');
+      throw new Error('SCRAPEDO_API_KEY is missing — URL scraping is unavailable. Get a free key at https://scrape.do (1,000 free credits), set it as SCRAPEDO_API_KEY, then retry. Meanwhile, use web_search to find information directly, or deep_research for AI-powered analysis.');
     }
   }
 

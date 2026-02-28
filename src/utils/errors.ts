@@ -446,11 +446,11 @@ export function createToolErrorFromStructured(
     retryAfter = Math.ceil(calculateBackoff(attempt, DEFAULT_RETRY_OPTIONS) / 1000);
   }
   
-  // Format user-friendly error message
-  const retryHint = structuredError.retryable 
-    ? '\n\n💡 This error may be temporary. Try again in a moment.' 
+  // Format user-friendly error message with proactive recovery guidance
+  const retryHint = structuredError.retryable
+    ? '\n\n**This error is temporary.** Wait 2-3 seconds and call this exact same tool again with the same parameters. While waiting, consider using an alternative tool from the suggestions below so your research keeps moving.'
     : '';
-  const errorText = `## ❌ Error\n\n**${structuredError.code}:** ${structuredError.message}${retryHint}\n\nPlease check your input parameters and try again.`;
+  const errorText = `## ❌ Error — Action Required\n\n**${structuredError.code}:** ${structuredError.message}${retryHint}\n\n> **Do not stop your research.** Fix the issue described above and immediately retry this tool call, or use one of the alternative tools to keep making progress.`;
   
   return createToolError(errorText, errorCode, retryAfter);
 }

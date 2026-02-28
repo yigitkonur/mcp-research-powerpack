@@ -76,7 +76,11 @@ export async function handleScrapeLinks(
 
   // Validate params
   if (!params.urls || params.urls.length === 0) {
-    return createErrorResponse('NO_URLS', 'No URLs provided');
+    return createErrorResponse('NO_URLS', 'You called scrape_links with an empty URL list. You need at least 1 URL to scrape.', false, [
+      'web_search(keywords=["topic documentation", "topic guide", "topic official site"]) — search for URLs first, then pass the results to scrape_links',
+      'search_reddit(queries=["topic recommendations"]) — find Reddit discussions with links to scrape',
+      'Once you have URLs, call scrape_links again with urls=[...your URLs...]',
+    ]);
   }
 
   // Filter out invalid URLs early
@@ -93,8 +97,10 @@ export async function handleScrapeLinks(
   }
 
   if (validUrls.length === 0) {
-    return createErrorResponse('INVALID_URLS', `All ${params.urls.length} URLs are invalid`, false, [
-      'web_search(keywords=["topic documentation", "topic guide"]) — search for valid URLs first, then scrape the results',
+    return createErrorResponse('INVALID_URLS', `All ${params.urls.length} URL(s) failed validation — none are valid HTTP/HTTPS URLs. Check for typos, missing protocols (https://), or malformed paths.`, false, [
+      'Fix the URLs: ensure each starts with "https://" and is a complete, valid URL (e.g., "https://example.com/page" not "example.com/page")',
+      'Then call scrape_links again immediately with the corrected URLs',
+      'web_search(keywords=["topic documentation", "topic guide"]) — if you don\'t have valid URLs, search for them first',
       'search_reddit(queries=["topic recommendations"]) — find discussion URLs to scrape instead',
     ]);
   }
@@ -110,10 +116,12 @@ export async function handleScrapeLinks(
     client = new ScraperClient();
   } catch (error) {
     const err = classifyError(error);
-    return createErrorResponse('CLIENT_INIT_FAILED', `Failed to initialize scraper: ${err.message}`, false, [
-      'web_search(keywords=["topic key findings", "topic summary", "topic overview"]) — search for information instead of scraping',
-      'search_reddit(queries=["topic discussion", "topic recommendations"]) — get community insights as an alternative',
-      'deep_research(questions=[{question: "Summarize the key information from [topic/URLs]"}]) — use AI research to gather equivalent information',
+    return createErrorResponse('CLIENT_INIT_FAILED', `Scraper client failed to initialize: ${err.message}. This usually means SCRAPEDO_API_KEY is missing or invalid.`, false, [
+      'Set SCRAPEDO_API_KEY in your environment — get a free key at https://scrape.do (1,000 free credits)',
+      'Once set, call scrape_links again with the same URLs',
+      'web_search(keywords=["topic key findings", "topic summary", "topic overview"]) — search for information instead of scraping (uses Serper API, different service)',
+      'search_reddit(queries=["topic discussion", "topic recommendations"]) — get community insights as an alternative (uses Serper API)',
+      'deep_research(questions=[{question: "Summarize key findings about [topic]"}]) — use AI research to gather equivalent information (uses OpenRouter API)',
     ]);
   }
 
@@ -241,11 +249,11 @@ export async function handleScrapeLinks(
   });
 
   const nextSteps = [
-    successful > 0 ? 'FOLLOW LINKS: If scraped content references other URLs/docs/sources, scrape those too: scrape_links(urls=[...extracted URLs...], use_llm=true)' : null,
-    successful > 0 ? 'VERIFY: web_search(keywords=["claim from scraped content", "topic official source", "topic benchmark data"]) — cross-check extracted claims' : null,
-    successful > 0 ? 'COMMUNITY: search_reddit(queries=["topic experiences", "topic recommendations", "topic issues"]) — if topic warrants community perspective' : null,
-    successful > 0 ? 'SYNTHESIZE (only after verifying + community check): deep_research(questions=[{question: "Based on scraped data and verification..."}])' : null,
-    failed > 0 ? `Retry failed URLs with longer timeout: scrape_links(urls=[...], timeout=60)` : null,
+    successful > 0 ? 'FOLLOW THE TRAIL: Read through the scraped content above. If it references other URLs, documentation pages, GitHub repos, or data sources — scrape those too: scrape_links(urls=[...referenced URLs...], use_llm=true). The best insights are often one link away from your initial scrape.' : null,
+    successful > 0 ? 'VERIFY CLAIMS: The content above may contain outdated info, marketing claims, or biased perspectives. Cross-check: web_search(keywords=["specific claim from above", "topic official documentation", "topic benchmark data 2025"]) — trust but verify.' : null,
+    successful > 0 ? 'GET REAL-WORLD EXPERIENCE: search_reddit(queries=["topic experiences", "topic problems", "topic recommendations", "topic vs alternatives"]) — scraped docs tell you what something IS, Reddit tells you how it WORKS IN PRACTICE. You need both.' : null,
+    successful > 0 ? 'ONLY THEN SYNTHESIZE: deep_research(questions=[{question: "Based on scraped primary sources and community validation..."}]) — do NOT synthesize yet if you haven\'t verified claims and checked community opinions. Premature synthesis = shallow analysis.' : null,
+    failed > 0 ? `RETRY FAILURES: ${failed} URL(s) failed. Retry with longer timeout: scrape_links(urls=[...failed URLs...], timeout=90). If still failing, the site may be blocking scrapers — try web_search to find cached/mirrored versions.` : null,
   ].filter(Boolean) as string[];
 
   const formattedContent = formatSuccess({

@@ -69,22 +69,36 @@ export async function handleDeepResearch(
     return {
       content: formatError({
         code: 'MIN_QUESTIONS',
-        message: `Minimum ${MIN_QUESTIONS} research question(s) required. Received: ${questions.length}`,
+        message: `You sent ${questions.length} question(s) but need at least ${MIN_QUESTIONS}. Add ${MIN_QUESTIONS - questions.length} more question(s) and call deep_research again.`,
         toolName: 'deep_research',
-        howToFix: ['Add at least one question with detailed context following the template: WHAT I NEED, WHY, WHAT I KNOW, SPECIFIC QUESTIONS'],
+        howToFix: [
+          `Add at least ${MIN_QUESTIONS - questions.length} more question(s) following the structured template: WHAT I NEED → WHY → WHAT I KNOW → HOW I'LL USE → SPECIFIC QUESTIONS`,
+          'Each question should target a different angle of your research topic for maximum coverage',
+          'Then call deep_research again immediately with the expanded questions array',
+        ],
+        alternatives: [
+          'web_search(keywords=["topic overview", "topic best practices", "topic guide"]) — gather context first, then formulate better research questions',
+          'search_reddit(queries=["topic discussion", "topic recommendations"]) — get community perspective while you refine your questions',
+        ],
       }),
-      structuredContent: { error: true, message: `Minimum ${MIN_QUESTIONS} question(s) required` },
+      structuredContent: { error: true, message: `Need ${MIN_QUESTIONS - questions.length} more question(s). Add them and retry.` },
     };
   }
   if (questions.length > MAX_QUESTIONS) {
+    const excess = questions.length - MAX_QUESTIONS;
+    const batches = Math.ceil(questions.length / MAX_QUESTIONS);
     return {
       content: formatError({
         code: 'MAX_QUESTIONS',
-        message: `Maximum ${MAX_QUESTIONS} research questions allowed. Received: ${questions.length}`,
+        message: `You sent ${questions.length} questions but the maximum per call is ${MAX_QUESTIONS}. You have ${excess} too many.`,
         toolName: 'deep_research',
-        howToFix: [`Remove ${questions.length - MAX_QUESTIONS} question(s)`],
+        howToFix: [
+          `Split into ${batches} separate deep_research calls of ~${Math.ceil(questions.length / batches)} questions each`,
+          `Call deep_research with the first ${MAX_QUESTIONS} questions NOW, then call again with the remaining ${excess}`,
+          'Each call gets its own 32K token budget, so splitting actually gives you MORE tokens total',
+        ],
       }),
-      structuredContent: { error: true, message: `Maximum ${MAX_QUESTIONS} questions allowed` },
+      structuredContent: { error: true, message: `Split into ${batches} calls of ${MAX_QUESTIONS} questions each` },
     };
   }
 
@@ -101,16 +115,20 @@ export async function handleDeepResearch(
     return {
       content: formatError({
         code: 'CLIENT_INIT_FAILED',
-        message: `Failed to initialize research client: ${err.message}`,
+        message: `Cannot start research — OpenRouter client failed to initialize: ${err.message}`,
         toolName: 'deep_research',
-        howToFix: ['Check OPENROUTER_API_KEY is set'],
+        howToFix: [
+          'Set the OPENROUTER_API_KEY environment variable — get a key at https://openrouter.ai/keys',
+          'If the key is set, verify it hasn\'t expired or been revoked',
+          'Once fixed, call deep_research again with the same questions',
+        ],
         alternatives: [
-          'web_search(keywords=["topic best practices", "topic guide", "topic comparison 2025"]) — uses Serper API (different key), search for information directly',
-          'search_reddit(queries=["topic recommendations", "topic experience", "topic discussion"]) — uses Serper API, get community perspective',
-          'scrape_links(urls=[...any relevant URLs...], use_llm=true) — if you have URLs, scrape them for content (uses Firecrawl + OpenRouter, may also fail if OpenRouter key is the issue)',
+          'web_search(keywords=["topic best practices", "topic guide", "topic comparison 2025"]) — uses Serper API (completely different service), will work even if OpenRouter is down',
+          'search_reddit(queries=["topic recommendations", "topic experience", "topic discussion"]) — uses Serper API, get real community perspective',
+          'scrape_links(urls=[...any relevant URLs...], use_llm=false) — scrape without AI extraction (still gets raw content, no OpenRouter needed)',
         ],
       }),
-      structuredContent: { error: true, message: `Failed to initialize: ${err.message}` },
+      structuredContent: { error: true, message: `OpenRouter init failed: ${err.message}. Use web_search or search_reddit instead.` },
     };
   }
 
@@ -212,11 +230,11 @@ export async function handleDeepResearch(
   }
 
   const nextSteps = [
-    successful.length > 0 ? 'SCRAPE CITED SOURCES: scrape_links(urls=[...URLs cited in research above...], use_llm=true, what_to_extract="Extract evidence | data | methodology | conclusions") — verify research citations with primary sources' : null,
-    successful.length > 0 ? 'COMMUNITY VALIDATION: search_reddit(queries=["topic findings", "topic real experience", "topic criticism"]) — check if community agrees with research findings' : null,
-    successful.length > 0 ? 'ITERATE: If research revealed gaps or new questions, run deep_research again with refined questions targeting those gaps' : null,
-    successful.length > 0 ? 'WEB VERIFY: web_search(keywords=["specific claim from research", "topic latest data 2025"]) — if claims need independent verification' : null,
-    failed.length > 0 ? 'Retry failed questions with more specific context' : null,
+    successful.length > 0 ? 'VERIFY CITATIONS: The research above cites sources — but are they accurate? scrape_links(urls=[...cited URLs from research above...], use_llm=true, what_to_extract="Extract evidence | data | methodology | conclusions") — AI research can hallucinate citations. Verify the actual source content matches what was claimed.' : null,
+    successful.length > 0 ? 'REALITY CHECK: search_reddit(queries=["topic real experience", "topic problems", "topic criticism", "topic vs alternatives"]) — research gives you the textbook answer. Reddit gives you what actually happens in production. These often differ dramatically.' : null,
+    successful.length > 0 ? 'FOUND GAPS? Research almost always reveals unknowns you didn\'t anticipate. If the answers above mention topics, tradeoffs, or alternatives you hadn\'t considered — run deep_research again with NEW questions targeting those gaps. First-pass research is a starting point, not the final answer.' : null,
+    successful.length > 0 ? 'CROSS-CHECK KEY CLAIMS: web_search(keywords=["specific claim from research", "topic latest benchmarks 2025", "topic official docs"]) — independent verification prevents you from building on incorrect assumptions.' : null,
+    failed.length > 0 ? `RETRY FAILURES: ${failed.length} question(s) failed. Retry with more specific context, or split complex questions into simpler sub-questions. Each retry gets a fresh token budget.` : null,
   ].filter(Boolean) as string[];
 
   const formattedContent = formatSuccess({

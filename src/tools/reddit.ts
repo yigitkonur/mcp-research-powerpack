@@ -78,17 +78,18 @@ export async function handleSearchReddit(
     if (totalResults === 0) {
       return formatError({
         code: 'NO_RESULTS',
-        message: `No results found for any of the ${limited.length} queries`,
+        message: `Zero Reddit results across all ${limited.length} queries. Your search terms may be too specific, misspelled, or the topic has no Reddit coverage.`,
         toolName: 'search_reddit',
         howToFix: [
-          'Try broader or simpler search terms',
-          'Check spelling of technical terms',
-          'Remove date filters if using them',
+          `Broaden your queries — replace multi-word phrases with single keywords (e.g., "best React state management library 2025" → "React state management")`,
+          'Double-check spelling of technical terms (e.g., "PostgreSQL" not "PostgressQL")',
+          'Remove the date_after filter if you used one — it may be filtering out all results',
+          `Call search_reddit again NOW with ${Math.max(3, limited.length)} simplified, broader queries targeting the same topic from different angles`,
         ],
         alternatives: [
-          'web_search(keywords=["topic best practices", "topic guide", "topic recommendations 2025"]) — get results from the broader web instead',
-          'scrape_links(urls=[...any URLs you already have...], use_llm=true) — if you have URLs from earlier searches, scrape them now',
-          'deep_research(questions=[{question: "What are the key findings about [topic]?"}]) — synthesize from AI research',
+          'web_search(keywords=["topic best practices", "topic guide", "topic recommendations 2025"]) — Reddit had nothing, so pivot to the broader web immediately',
+          'scrape_links(urls=[...any URLs you already have...], use_llm=true) — if you have URLs from earlier searches, scrape them now instead of waiting',
+          'deep_research(questions=[{question: "What are the key findings about [topic]?"}]) — use AI research to synthesize what you need',
         ],
       });
     }
@@ -102,14 +103,17 @@ export async function handleSearchReddit(
     const structuredError = classifyError(error);
     return formatError({
       code: structuredError.code,
-      message: structuredError.message,
+      message: `search_reddit failed: ${structuredError.message}`,
       retryable: structuredError.retryable,
       toolName: 'search_reddit',
-      howToFix: ['Verify SERPER_API_KEY is set correctly'],
+      howToFix: [
+        'Verify SERPER_API_KEY is set correctly in your environment variables',
+        structuredError.retryable ? 'This is a temporary error — call search_reddit again with the same queries in 3 seconds' : 'Check the API key and fix configuration before retrying',
+      ],
       alternatives: [
-        'web_search(keywords=["topic recommendations", "topic best practices", "topic vs alternatives"]) — uses the same API key, but try anyway as it may work for general search',
-        'deep_research(questions=[{question: "What does the community recommend for [topic]?"}]) — uses a different API (OpenRouter), not affected by this error',
-        'scrape_links(urls=[...any URLs you already have...], use_llm=true) — if you have URLs from prior steps, scrape them now',
+        'web_search(keywords=["topic recommendations", "topic best practices", "topic vs alternatives"]) — same API but different endpoint, may still work',
+        'deep_research(questions=[{question: "What does the community recommend for [topic]?"}]) — uses OpenRouter API (completely different service), will work even if Serper is down',
+        'scrape_links(urls=[...any URLs you already have...], use_llm=true) — if you gathered URLs from earlier steps, scrape them NOW instead of waiting',
       ],
     });
   }
@@ -162,22 +166,33 @@ export async function handleGetRedditPosts(
     const { fetchComments = true, maxCommentsOverride, use_llm = false, what_to_extract } = options;
 
     if (urls.length < REDDIT.MIN_POSTS) {
+      const deficit = REDDIT.MIN_POSTS - urls.length;
       return formatError({
         code: 'MIN_POSTS',
-        message: `Minimum ${REDDIT.MIN_POSTS} Reddit posts required. Received: ${urls.length}`,
+        message: `You sent ${urls.length} Reddit URL(s) but the minimum is ${REDDIT.MIN_POSTS}. You need ${deficit} more URL(s).`,
         toolName: 'get_reddit_post',
-        howToFix: [`Add at least ${REDDIT.MIN_POSTS - urls.length} more Reddit URL(s)`],
+        howToFix: [
+          `You're only ${deficit} URL(s) short! Run search_reddit first to find more posts, then come back with ${REDDIT.MIN_POSTS}+ URLs`,
+          `Call: search_reddit(queries=["topic discussion", "topic recommendations", "topic experiences"]) — this will return Reddit post URLs you can use`,
+          `Then call get_reddit_post again with the original URL(s) PLUS the new ones from search_reddit`,
+        ],
         alternatives: [
-          `search_reddit(queries=["topic discussion", "topic recommendations", "topic experiences"]) — find more Reddit posts first, then call get_reddit_post with ${REDDIT.MIN_POSTS}+ URLs`,
+          `search_reddit(queries=["topic discussion", "topic recommendations", "topic experiences"]) — find ${deficit}+ more Reddit posts, then call get_reddit_post with ALL URLs combined`,
+          `web_search(keywords=["topic site:reddit.com"]) — find Reddit posts via web search as a backup source of URLs`,
         ],
       });
     }
     if (urls.length > REDDIT.MAX_POSTS) {
+      const excess = urls.length - REDDIT.MAX_POSTS;
+      const batches = Math.ceil(urls.length / REDDIT.MAX_POSTS);
       return formatError({
         code: 'MAX_POSTS',
-        message: `Maximum ${REDDIT.MAX_POSTS} Reddit posts allowed. Received: ${urls.length}`,
+        message: `You sent ${urls.length} URLs but the maximum is ${REDDIT.MAX_POSTS} per call. You have ${excess} too many.`,
         toolName: 'get_reddit_post',
-        howToFix: [`Remove ${urls.length - REDDIT.MAX_POSTS} URL(s) and retry`],
+        howToFix: [
+          `Split into ${batches} separate calls of ~${Math.ceil(urls.length / batches)} URLs each, then combine the results`,
+          `Or remove the ${excess} least-relevant URLs and call this tool again with the top ${REDDIT.MAX_POSTS}`,
+        ],
       });
     }
 
@@ -252,11 +267,11 @@ export async function handleGetRedditPosts(
     }
 
     const nextSteps = [
-      successful > 0 ? 'VERIFY CLAIMS: web_search(keywords=["topic claim1 verify", "topic claim2 official docs", "topic best practices"]) — community says X, verify with web' : null,
-      successful > 0 ? 'SCRAPE REFERENCED LINKS: scrape_links(urls=[...URLs found in comments...], use_llm=true, what_to_extract="Extract evidence | data | recommendations") — follow external links from discussions' : null,
-      'BROADEN: search_reddit(queries=[...related angles...]) — if more perspectives needed',
-      successful > 0 ? 'SYNTHESIZE (only after verifying + scraping): deep_research(questions=[{question: "Based on verified Reddit findings about [topic]..."}])' : null,
-      failed > 0 ? 'Retry failed URLs individually' : null,
+      successful > 0 ? 'VERIFY WHAT REDDIT SAYS: Reddit comments are opinions, not facts. Cross-check the top claims: web_search(keywords=["specific claim from comments", "topic official benchmarks", "topic documentation"]) — community consensus can be wrong. Verify before trusting.' : null,
+      successful > 0 ? 'FOLLOW THE LINKS: Comments above likely mention specific tools, libraries, blog posts, or docs. Scrape them: scrape_links(urls=[...URLs from comments...], use_llm=true, what_to_extract="Extract evidence | data | recommendations | benchmarks") — the gold is often in the links people share, not the comments themselves.' : null,
+      'MISSING PERSPECTIVES? Look at the subreddits above. Are you only seeing one community\'s view? search_reddit(queries=["topic" + different subreddit angles, "topic criticism", "topic alternatives"]) — a single subreddit is an echo chamber. Get diverse opinions.',
+      successful > 0 ? 'ONLY THEN SYNTHESIZE: deep_research(questions=[{question: "Based on verified Reddit community findings..."}]) — synthesize AFTER you\'ve verified claims and scraped referenced links. Raw Reddit comments without verification = unreliable conclusions.' : null,
+      failed > 0 ? `RETRY FAILURES: ${failed} post(s) failed to fetch. Try them individually, or use scrape_links(urls=[...failed URLs...], use_llm=true) as a direct HTTP fallback.` : null,
     ].filter(Boolean) as string[];
 
     const extraStatus = statusExtras.length > 0 ? `\n${statusExtras.join(' | ')}` : '';
@@ -271,14 +286,18 @@ export async function handleGetRedditPosts(
     const structuredError = classifyError(error);
     return formatError({
       code: structuredError.code,
-      message: structuredError.message,
+      message: `get_reddit_post failed: ${structuredError.message}`,
       retryable: structuredError.retryable,
       toolName: 'get_reddit_post',
-      howToFix: ['Verify REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET are set'],
+      howToFix: [
+        'Verify REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET are set in environment variables',
+        'Create a Reddit app at https://www.reddit.com/prefs/apps (select "script" type) if you haven\'t already',
+        structuredError.retryable ? 'This is temporary — call get_reddit_post again with the same URLs in 3 seconds' : 'Fix the credentials and retry',
+      ],
       alternatives: [
-        'web_search(keywords=["topic reddit discussion", "topic reddit recommendations"]) — search for Reddit content via web search instead',
-        'scrape_links(urls=[...the Reddit URLs...], use_llm=true, what_to_extract="Extract post content | top comments | recommendations") — scrape Reddit pages directly as a fallback',
-        'deep_research(questions=[{question: "What are community opinions on [topic]?"}]) — get AI-synthesized community perspective',
+        'scrape_links(urls=[...the same Reddit URLs...], use_llm=true, what_to_extract="Extract post title | post content | top comments | recommendations | consensus") — scrape Reddit pages directly via HTTP as a fallback (no Reddit API credentials needed)',
+        'web_search(keywords=["topic reddit discussion", "topic reddit recommendations"]) — find cached/indexed Reddit content via Google',
+        'deep_research(questions=[{question: "What are community opinions and recommendations for [topic]?"}]) — uses OpenRouter (different API), synthesizes community perspective from web sources',
       ],
     });
   }

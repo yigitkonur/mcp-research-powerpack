@@ -138,14 +138,15 @@ export async function handleWebSearch(
       : aggregation.rankedUrls.slice(0, 5).map(u => `"${u.url}"`).join(', ');
 
     const nextSteps = [
-      `MUST DO: scrape_links(urls=[${topConsensusUrls}], use_llm=true, what_to_extract="Extract key findings | recommendations | data | evidence | comparisons") — searching only gives URLs, scraping gets the actual content`,
-      'COMMUNITY CHECK: search_reddit(queries=["topic recommendations", "topic best 2025", "topic vs alternatives"]) — get real user experiences',
-      'ITERATE: If results are insufficient, search again with different keywords from "Related" suggestions above',
-      'SYNTHESIZE (only after scraping + Reddit): deep_research(questions=[{question: "Based on scraped content and community feedback..."}])',
+      `SCRAPE NOW: scrape_links(urls=[${topConsensusUrls}], use_llm=true, what_to_extract="Extract key findings | recommendations | data | evidence | comparisons") — you only have URLs right now, NOT content. Searching without scraping is like reading a table of contents without opening the book. Scrape immediately.`,
+      'GET REAL OPINIONS: search_reddit(queries=["topic recommendations", "topic best 2025", "topic vs alternatives", "topic problems", "topic experience"]) — web results are curated marketing. Reddit has raw, unfiltered user experiences. You need both perspectives.',
+      'SEARCH DEEPER: Look at the "Related" suggestions above. If ANY of them reveal angles you haven\'t covered, run web_search again with those as keywords. First-pass searches are NEVER comprehensive enough.',
+      'ONLY THEN SYNTHESIZE: deep_research(questions=[{question: "Based on scraped content and community feedback from Reddit, synthesize..."}]) — do NOT synthesize until you\'ve scraped AND checked Reddit. Synthesizing from URLs alone produces shallow analysis.',
     ];
 
-    markdown += '\n\n---\n\n**Next Steps (DO ALL — research is a loop, not a single call):**\n';
+    markdown += '\n\n---\n\n**YOUR RESEARCH IS NOT DONE — Do ALL of these next steps (research is a loop, not a single search):**\n';
     nextSteps.forEach((step, i) => { markdown += `${i + 1}. ${step}\n`; });
+    markdown += '\n> **Stop and think:** Did this search fully answer your question? Almost certainly not — search results are just links. You MUST scrape the top results AND cross-reference with community opinions before you have real answers. Keep going.\n';
 
     markdown += `\n---\n*${formatDuration(executionTime)} | ${aggregation.totalUniqueUrls} unique URLs | ${consensusUrls.length} consensus*`;
 
@@ -167,14 +168,17 @@ export async function handleWebSearch(
 
     const errorContent = formatError({
       code: structuredError.code,
-      message: structuredError.message,
+      message: `web_search failed: ${structuredError.message}`,
       retryable: structuredError.retryable,
       toolName: 'web_search',
-      howToFix: ['Verify SERPER_API_KEY is set correctly'],
+      howToFix: [
+        'Verify SERPER_API_KEY is set correctly in your environment variables — get a free key at https://serper.dev (2,500 free queries)',
+        structuredError.retryable ? 'This is temporary — wait 3 seconds and call web_search again with the same keywords' : 'Fix the API key and retry',
+      ],
       alternatives: [
-        'search_reddit(queries=["topic recommendations", "topic best practices", "topic vs alternatives"]) — Reddit search uses the same API but may work; also provides community perspective',
-        'deep_research(questions=[{question: "What are the key findings, best practices, and recommendations for [topic]?"}]) — uses OpenRouter API (different key), not affected by this error',
-        'scrape_links(urls=[...any URLs you already have...], use_llm=true) — if you have URLs from prior steps, scrape them now instead of searching',
+        'search_reddit(queries=["topic recommendations", "topic best practices", "topic vs alternatives"]) — same API but different endpoint, may still work; also gives you community perspective',
+        'deep_research(questions=[{question: "What are the key findings, best practices, and recommendations for [topic]?"}]) — uses OpenRouter API (completely different service), will work even if Serper is down',
+        'scrape_links(urls=[...any URLs you already have from prior steps...], use_llm=true) — if you gathered URLs earlier, scrape them NOW instead of waiting for search to recover',
       ],
     });
 

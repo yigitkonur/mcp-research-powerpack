@@ -44,12 +44,14 @@ export function formatSuccess(opts: SuccessOptions): string {
     parts.push(opts.data);
   }
 
-  // Next steps (10%)
+  // Next steps (10%) — framed as imperative actions, not optional suggestions
   if (opts.nextSteps?.length) {
     parts.push('');
     parts.push('---');
-    parts.push('**Next Steps:**');
-    opts.nextSteps.forEach(step => parts.push(`→ ${step}`));
+    parts.push('**Next Steps (DO NOT SKIP — your research is incomplete without these):**');
+    opts.nextSteps.forEach((step, i) => parts.push(`${i + 1}. ${step}`));
+    parts.push('');
+    parts.push('> **Research quality check:** Before moving on, ask yourself — have you scraped the key URLs? Verified claims with independent sources? Checked community opinions? If not, your research has gaps. Use the steps above to fill them.');
   }
 
   // Metadata footer
@@ -87,38 +89,43 @@ export interface ErrorOptions {
 /**
  * Format an error response with recovery guidance
  * Designed to keep agents moving — every error includes actionable alternatives
+ * Messages are written to STEER the agent: tell it exactly what to fix, how to retry, and what to do next
  */
 export function formatError(opts: ErrorOptions): string {
   const parts: string[] = [];
 
-  // Error header
+  // Error header — action-oriented, not just descriptive
   const prefix = opts.toolName ? `[${opts.toolName}] ` : '';
   parts.push(`❌ ${prefix}${opts.code}: ${opts.message}`);
 
-  // Retryable hint — be specific about what to do while waiting
+  // Retryable hint — be directive, not passive
   if (opts.retryable) {
     parts.push('');
-    parts.push('*This error is retryable. Wait a moment and try again — but use the alternatives below in the meantime so research continues.*');
+    parts.push('**RETRYABLE — call this tool again in 2-3 seconds with the same parameters.** While waiting, use the alternatives below so your research pipeline keeps moving. Do NOT wait idle.');
   }
 
-  // How to fix
+  // How to fix — numbered steps with concrete actions
   if (opts.howToFix?.length) {
     parts.push('');
-    parts.push('**How to Fix:**');
+    parts.push('**FIX THIS NOW:**');
     opts.howToFix.forEach((step, i) => parts.push(`${i + 1}. ${step}`));
+    parts.push('');
+    parts.push('**Then call this tool again immediately with the corrected parameters.**');
   }
 
-  // Alternatives — directive, not optional
+  // Alternatives — imperative, not suggestions
   if (opts.alternatives?.length) {
     parts.push('');
-    parts.push('**DO THIS INSTEAD (don\'t stop researching):**');
+    parts.push('**MEANWHILE — keep researching with these tools (do ALL that apply):**');
     opts.alternatives.forEach((alt, i) => parts.push(`${i + 1}. ${alt}`));
   }
 
-  // Continuation footer — push agents to keep going
+  // Continuation footer — aggressive agent steering
+  parts.push('');
   if (opts.alternatives?.length) {
-    parts.push('');
-    parts.push('> This tool failed but your research should NOT stop. Use the alternatives above to continue gathering information from other sources.');
+    parts.push('> **CRITICAL: Your research must NOT stop here.** This is one tool in your pipeline. Fix and retry this call, AND use the alternatives above in parallel. Stopping now means incomplete research and missed insights. Keep going.');
+  } else {
+    parts.push('> **Do not abandon this research path.** Fix the issue above and retry this tool call immediately.');
   }
 
   return parts.join('\n');

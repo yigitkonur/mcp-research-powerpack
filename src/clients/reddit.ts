@@ -199,13 +199,13 @@ export class RedditClient {
   async getPost(url: string, maxComments = 100): Promise<PostResult> {
     const parsed = this.parseUrl(url);
     if (!parsed) {
-      throw new Error(`Invalid Reddit URL format: ${url}`);
+      throw new Error(`Invalid Reddit URL format: "${url}". Expected format: https://www.reddit.com/r/subreddit/comments/id/title/ — check for typos or missing path segments, fix the URL, and retry.`);
     }
 
     // Auth - returns null on failure
     const token = await this.auth();
     if (!token) {
-      throw new Error('Reddit authentication failed - check credentials');
+      throw new Error('Reddit API authentication failed. Verify REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET are correct. Get credentials at https://www.reddit.com/prefs/apps (select "script" type). Workaround: use scrape_links(urls=[...], use_llm=true) to scrape Reddit pages directly without API credentials.');
     }
 
     const limit = Math.min(maxComments, 500);
@@ -233,7 +233,7 @@ export class RedditClient {
 
         // 404 - Post doesn't exist
         if (res.status === 404) {
-          throw new Error(`Post not found: ${url}`);
+          throw new Error(`Reddit post not found (404): "${url}". The post may have been deleted, made private, or the URL is wrong. Remove this URL from your list and retry with the remaining URLs.`);
         }
 
         // Other errors
@@ -247,7 +247,7 @@ export class RedditClient {
             continue;
           }
 
-          throw new Error(`Reddit API error: ${res.status}`);
+          throw new Error(`Reddit API returned HTTP ${res.status} for "${url}". This may be temporary — the tool retried but failed. Use scrape_links(urls=["${url}"], use_llm=true) as a direct HTTP fallback.`);
         }
 
         // Parse response safely
@@ -255,14 +255,14 @@ export class RedditClient {
         try {
           data = await res.json() as [any, any];
         } catch (parseError) {
-          throw new Error('Failed to parse Reddit API response');
+          throw new Error('Reddit API returned unparseable JSON. This is a temporary Reddit server issue — retry in a few seconds, or use scrape_links as a direct HTTP fallback to get the content.');
         }
 
         const [postListing, commentListing] = data;
         const p = postListing?.data?.children?.[0]?.data;
 
         if (!p) {
-          throw new Error(`Post data not found in response: ${url}`);
+          throw new Error(`Reddit API returned empty/unexpected data for "${url}" — this happens with crossposts, galleries, or special post types. Remove this URL and retry, or use scrape_links as a fallback.`);
         }
 
         const post: Post = {
@@ -300,7 +300,7 @@ export class RedditClient {
     }
 
     // All retries exhausted
-    throw new Error(lastError?.message || 'Failed to fetch Reddit post after retries');
+    throw new Error(lastError?.message || `All retry attempts exhausted for "${url}". Use scrape_links(urls=["${url}"], use_llm=true) as a direct HTTP fallback.`);
   }
 
   private formatBody(p: any): string {

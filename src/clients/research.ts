@@ -77,7 +77,7 @@ export class ResearchClient {
 
   constructor() {
     if (!RESEARCH.API_KEY) {
-      throw new Error('OPENROUTER_API_KEY is required for research');
+      throw new Error('OPENROUTER_API_KEY is missing — deep research is unavailable. Get an API key at https://openrouter.ai/keys, set it as OPENROUTER_API_KEY, then retry. Meanwhile, use web_search + scrape_links (uses Serper + Scrape.do APIs) to gather research manually.');
     }
 
     this.client = new OpenAI({
@@ -310,7 +310,7 @@ export class ResearchClient {
         content: '',
         error: {
           code: ErrorCode.INVALID_INPUT,
-          message: 'Research question cannot be empty',
+          message: 'Research question is empty — provide a detailed question following the template: WHAT I NEED → WHY → WHAT I KNOW → SPECIFIC QUESTIONS. Then call deep_research again.',
           retryable: false,
         },
       };

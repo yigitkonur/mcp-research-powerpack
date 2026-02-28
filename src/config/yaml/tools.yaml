@@ -20,18 +20,18 @@ tools:
   - name: search_reddit
     category: reddit
     capability: search
-    limits: {min_queries: 10, max_queries: 50, recommended: 20}
+    limits: {min_queries: 3, max_queries: 50, recommended: 20}
 
     description: |
-      MIN 10 queries, REC 20+ (10q=100 results, 20q=200 results). Each query MUST target DIFFERENT angle - NO overlap! 10 categories: 1) direct topic 2) recommendations (best/top) 3) specific tools/repos/names 4) comparisons (vs) 5) alternatives 6) subreddit targeting (r/macapps, r/opensource) 7) problems/issues/crashes 8) year-specific (2024/2025) 9) features 10) dev/GitHub/electron. Operators: intitle:, "exact", OR, -exclude. Using 1-3 queries wastes parallel power. Auto adds site:reddit.com.
+      MIN 3 queries, REC 5-7 (5q=50 results, 10q=100, 20q=200). Each query MUST target DIFFERENT angle - NO overlap! 10 categories: 1) direct topic 2) recommendations (best/top) 3) specific tools/repos/names 4) comparisons (vs) 5) alternatives 6) subreddit targeting (r/macapps, r/opensource) 7) problems/issues/crashes 8) year-specific (2024/2025) 9) features 10) dev/GitHub/electron. Operators: intitle:, "exact", OR, -exclude. More queries = better coverage = richer results. Auto adds site:reddit.com.
 
     parameters:
       queries:
         type: array
         required: true
         items: {type: string}
-        validation: {minItems: 10, maxItems: 50}
-        description: "10-50 diverse queries. Each targets different angle: direct|best|tools|vs|alternative|r/sub|issues|2024|features|GitHub. NO overlap."
+        validation: {minItems: 3, maxItems: 50}
+        description: "3-50 diverse queries. Each targets different angle: direct|best|tools|vs|alternative|r/sub|issues|2024|features|GitHub. NO overlap."
       date_after:
         type: string
         required: false

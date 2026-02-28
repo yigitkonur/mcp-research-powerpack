@@ -55,7 +55,7 @@ export type ToolRegistry = Record<string, ToolRegistration>;
 // ============================================================================
 
 const searchRedditParamsSchema = z.object({
-  queries: z.array(z.string()).min(10).max(50),
+  queries: z.array(z.string()).min(3).max(50),
   date_after: z.string().optional(),
 });
 
@@ -233,10 +233,28 @@ export async function executeTool(
   } catch (error) {
     if (error instanceof ZodError) {
       const issues = error.issues
-        .map((i) => `- **${i.path.join('.') || 'root'}**: ${i.message}`)
+        .map((i) => {
+          const field = i.path.join('.') || 'root';
+          let fix = '';
+          // Proactive guidance for common validation failures
+          if (i.code === 'too_small' && 'minimum' in i) {
+            const received = (i as any).received ?? '?';
+            const minimum = (i as any).minimum;
+            const deficit = typeof received === 'number' ? minimum - received : minimum;
+            fix = `\n  **Quick fix:** You sent ${received} item(s) but need at least ${minimum}. Add ${deficit} more item(s) to your \`${field}\` array, then call this tool again with the expanded list.`;
+          } else if (i.code === 'too_big' && 'maximum' in i) {
+            const received = (i as any).received ?? '?';
+            const maximum = (i as any).maximum;
+            const excess = typeof received === 'number' ? received - maximum : '?';
+            fix = `\n  **Quick fix:** You sent ${received} item(s) but the maximum is ${maximum}. Remove ${excess} item(s) from your \`${field}\` array, then call this tool again.`;
+          } else if (i.code === 'invalid_type') {
+            fix = `\n  **Quick fix:** The \`${field}\` parameter expects type \`${(i as any).expected}\` but received \`${(i as any).received}\`. Fix the type and call this tool again.`;
+          }
+          return `- **${field}**: ${i.message}${fix}`;
+        })
         .join('\n');
       return {
-        content: [{ type: 'text', text: `# ❌ Validation Error\n\n${issues}` }],
+        content: [{ type: 'text', text: `# ❌ Validation Error — Fix & Retry\n\n${issues}\n\n> **Do not stop.** Fix the parameter(s) above and immediately call this tool again. The research pipeline depends on this call succeeding.` }],
         isError: true,
       };
     }

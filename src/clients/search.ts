@@ -69,7 +69,7 @@ export class SearchClient {
     this.apiKey = apiKey || env.SEARCH_API_KEY || '';
 
     if (!this.apiKey) {
-      throw new Error('SERPER_API_KEY is required for search functionality');
+      throw new Error('SERPER_API_KEY is missing — search tools are unavailable. Get a free API key at https://serper.dev (2,500 free queries). Set it as SERPER_API_KEY in your environment, then retry. Meanwhile, use deep_research (OpenRouter) or scrape_links (Scrape.do) which use different APIs.');
     }
   }
 
