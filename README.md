@@ -38,7 +38,8 @@ add to your MCP config:
       "args": ["mcp-researchpowerpack"],
       "env": {
         "SERPER_API_KEY": "...",
-        "OPENROUTER_API_KEY": "..."
+        "OPENROUTER_API_KEY": "...",
+        "SCRAPEDO_API_KEY": "..."
       }
     }
   }
@@ -66,12 +67,19 @@ exposes `/mcp` (POST/GET/DELETE with session headers) and `/health`.
 
 each key unlocks a capability. missing keys silently disable their tools — the server never crashes.
 
+**required keys** — without these, core functionality is unavailable:
+
 | variable | enables | free tier |
 |:---|:---|:---|
 | `SERPER_API_KEY` | `web_search`, `search_reddit` | 2,500 searches/mo at serper.dev |
-| `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` | `get_reddit_post` | unlimited (reddit.com/prefs/apps, "script" type) |
-| `SCRAPEDO_API_KEY` | `scrape_links` | 1,000 credits/mo at scrape.do |
+| `SCRAPEDO_API_KEY` | `scrape_links` (scraping pipeline with JS rendering fallback) | 1,000 credits/mo at scrape.do |
 | `OPENROUTER_API_KEY` | `deep_research`, LLM extraction in scrape/reddit | pay-per-token at openrouter.ai |
+
+**optional keys** — add these for Reddit-specific capabilities:
+
+| variable | enables | free tier |
+|:---|:---|:---|
+| `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` | `get_reddit_post` | unlimited (reddit.com/prefs/apps, "script" type) |
 
 ## configuration
 
